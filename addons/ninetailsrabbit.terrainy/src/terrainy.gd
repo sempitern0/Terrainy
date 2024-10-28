@@ -68,35 +68,35 @@ func _ready() -> void:
 	generate_terrain()
 
 
-func generate_terrain() -> void:
-	if target_mesh == null:
-		push_warning("Terrainy: This node needs a target_mesh value to create the terrain, aborting generation...")
+func generate_terrain(selected_mesh: MeshInstance3D = target_mesh) -> void:
+	if selected_mesh == null:
+		push_warning("Terrainy: This node needs a selected_mesh value to create the terrain, aborting generation...")
 		return
 	
-	#if noise == null:
-		#push_warning("Terrainy: This node needs a noise value to create the terrain, aborting generation...")
-		#return
-		#
-	_set_owner_to_edited_scene_root(target_mesh)
+	if noise == null and noise_texture == null:
+		push_warning("Terrainy: This node needs a noise value or texture to create the terrain, aborting generation...")
+		return
+		
+	_set_owner_to_edited_scene_root(selected_mesh)
 	
-	if target_mesh.mesh is PlaneMesh:
-		set_terrain_size_on_plane_mesh(target_mesh.mesh)
-	elif target_mesh.mesh is QuadMesh:
-		set_terrain_size_on_plane_mesh(target_mesh.mesh)
-	elif  target_mesh.mesh is BoxMesh:
-		set_terrain_size_on_box_mesh(target_mesh.mesh)
-	elif target_mesh.mesh is PrismMesh:
-		set_terrain_size_on_prism_mesh(target_mesh.mesh)
-	elif target_mesh.mesh is ArrayMesh:
-		target_mesh.mesh = null
+	if selected_mesh.mesh is PlaneMesh:
+		set_terrain_size_on_plane_mesh(selected_mesh.mesh)
+	elif selected_mesh.mesh is QuadMesh:
+		set_terrain_size_on_plane_mesh(selected_mesh.mesh)
+	elif  selected_mesh.mesh is BoxMesh:
+		set_terrain_size_on_box_mesh(selected_mesh.mesh)
+	elif selected_mesh.mesh is PrismMesh:
+		set_terrain_size_on_prism_mesh(selected_mesh.mesh)
+	elif selected_mesh.mesh is ArrayMesh:
+		selected_mesh.mesh = null
 	
-	if target_mesh.mesh == null:
+	if selected_mesh.mesh == null:
 		var plane_mesh = PlaneMesh.new()
 		set_terrain_size_on_plane_mesh(plane_mesh)
-		target_mesh.mesh = plane_mesh
+		selected_mesh.mesh = plane_mesh
 		
-	_free_children(target_mesh)
-	create_surface(target_mesh)
+	_free_children(selected_mesh)
+	create_surface(selected_mesh)
 	
 
 func create_surface(mesh_instance: MeshInstance3D = target_mesh) -> void:
