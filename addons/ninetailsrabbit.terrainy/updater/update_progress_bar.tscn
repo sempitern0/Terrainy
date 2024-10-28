@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://2eahgaw88y6q"]
 
-[ext_resource type="Script" path="res://addons/my_plugin/updater/update_progress_bar.gd" id="1_7qcxe"]
-[ext_resource type="Texture2D" uid="uid://bdf47suvxkr8l" path="res://addons/my_plugin/assets/progress_background_green.png" id="2_sw0xs"]
+[ext_resource type="Script" path="res://addons/ninetailsrabbit.terrainy/updater/update_progress_bar.gd" id="1_7qcxe"]
+[ext_resource type="Texture2D" uid="uid://bdf47suvxkr8l" path="res://addons/ninetailsrabbit.terrainy/assets/progress_background_green.png" id="2_sw0xs"]
 
 [node name="UpdateProgressBar" type="ConfirmationDialog"]
 disable_3d = true

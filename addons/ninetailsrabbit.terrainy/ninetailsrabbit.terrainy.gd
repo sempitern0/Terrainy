@@ -12,6 +12,8 @@ func _enter_tree() -> void:
 	if not DirAccess.dir_exists_absolute(MyPluginSettings.PluginTemporaryReleaseUpdateDirectoryPath):
 		DirAccess.make_dir_recursive_absolute(MyPluginSettings.PluginTemporaryReleaseUpdateDirectoryPath)
 	
+	add_custom_type("Terrainy", "Node", preload("src/terrainy.gd"), preload("assets/terrainy.svg"))
+
 
 func _exit_tree() -> void:
 	MyPluginSettings.remove_settings()
@@ -19,6 +21,8 @@ func _exit_tree() -> void:
 	if update_notify_tool_instance:
 		update_notify_tool_instance.free()
 		update_notify_tool_instance = null
+		
+	remove_custom_type("Terrainy")
 
 ## Update tool referenced from https://github.com/MikeSchulze/gdUnit4/blob/master/addons/gdUnit4
 func _setup_updater() -> void:

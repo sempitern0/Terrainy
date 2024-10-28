@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://0xyeci1tqebj"]
 
-[ext_resource type="Script" path="res://addons/my_plugin/updater/update_notify_tool.gd" id="1_ul4xs"]
+[ext_resource type="Script" path="res://addons/ninetailsrabbit.terrainy/updater/update_notify_tool.gd" id="1_ul4xs"]
 
 [node name="UpdateNotifyTool" type="Window"]
 disable_3d = true

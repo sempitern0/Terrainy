@@ -10,7 +10,9 @@ config_version=5
 
 [application]
 
-config/name="godot-plugin-template"
+config/name="Terrainy"
+config/description="Quickly create natural-looking terrain with customizable noise parameters."
+config/version="1.0.0"
 config/features=PackedStringArray("4.3", "GL Compatibility")
 config/icon="res://icon.svg"
 

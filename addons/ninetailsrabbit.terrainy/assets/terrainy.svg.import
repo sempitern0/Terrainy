@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://qjmv3cxry8wu"
-path="res://.godot/imported/progress-background.png-998a5bde492cb044f40021717cd2a939.ctex"
+uid="uid://elhv0a18pg54"
+path="res://.godot/imported/terrainy.svg-0c39d3f9a5f94738a0ffe2158f3766b7.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://addons/my_plugin/assets/progress-background.png"
-dest_files=["res://.godot/imported/progress-background.png-998a5bde492cb044f40021717cd2a939.ctex"]
+source_file="res://addons/ninetailsrabbit.terrainy/assets/terrainy.svg"
+dest_files=["res://.godot/imported/terrainy.svg-0c39d3f9a5f94738a0ffe2158f3766b7.ctex"]
 
 [params]
 
@@ -32,3 +32,6 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
+svg/scale=1.0
+editor/scale_with_editor_scale=false
+editor/convert_colors_with_editor_theme=false
