@@ -27,6 +27,7 @@
     - [Target Mesh](#target-mesh)
     - [Terrain Material](#terrain-material)
     - [Noise](#noise)
+    - [Noise texture](#noise-texture)
 - [Shader materials 🏞️](#shader-materials-️)
   - [Albedo terrain mix](#albedo-terrain-mix)
 
@@ -52,7 +53,7 @@ Creating a new terrain is as easy as adding the `Terrainy` node into your scene.
 This node will warn you in the editor that it needs:
 
 - A `target mesh` representing a `MeshInstance3D` from which you want to generate the terrain.
-- A `noise` value with an instance of `FastNoiseLite` which is used as a template for generating the terrain surface.
+- A `noise` value with an instance of `FastNoiseLite` which is used as a template for generating the terrain surface or a custom `noise_texture`.
 
 **_If you try to generate a terrain without this values a warning will be pushed to the output window but it does not interrupt the execution of your game._**
 
@@ -90,7 +91,13 @@ This is the material that will be applied to the Terrain. Take a look on [Shader
 
 This is a [FastNoiseLite](https://docs.godotengine.org/en/stable/classes/class_fastnoiselite.html#fastnoiselite) instance. Noise values are perfect to generate a variety of surfaces, higher frequencies tend to generate more mountainous terrain.
 
-Play with the parameters and different types of noise to get the result you want.
+Play with the parameters and different types of noise to get the result you want, take into account that if this noise is defined the `noise_texture` will be ignored.
+
+### Noise texture
+
+Use a texture as noise to generate the terrain. **If a noise is defined, this texture will be ignored.**
+
+You can find a lot of ready noise textures from this itch asset store page [https://screamingbrainstudios.itch.io/noise-texture-pack](https://screamingbrainstudios.itch.io/noise-texture-pack)
 
 # Shader materials 🏞️
 

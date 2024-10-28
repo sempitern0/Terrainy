@@ -45,7 +45,12 @@ extends Node
 		if value != noise:
 			noise = value
 			update_configuration_warnings()
-
+## Use a texture as noise to generate the terrain. If a noise is defined, this texture will be ignored.
+@export var noise_texture: CompressedTexture2D:
+	set(value):
+		if value != noise_texture:
+			noise_texture = value
+			update_configuration_warnings()
 
 func _get_configuration_warnings():
 	var warnings: PackedStringArray = []
@@ -53,8 +58,8 @@ func _get_configuration_warnings():
 	if target_mesh == null:
 		warnings.append("No target mesh found. Expected a MeshInstance3D")
 	
-	if noise == null:
-		warnings.append("No noise found. Expected a FastNoiseLite")
+	if noise == null and noise_texture == null:
+		warnings.append("No noise found. Expected a FastNoiseLite or a Texture2D that represents a grayscale noise")
 		
 	return warnings
 	
@@ -68,10 +73,10 @@ func generate_terrain() -> void:
 		push_warning("Terrainy: This node needs a target_mesh value to create the terrain, aborting generation...")
 		return
 	
-	if noise == null:
-		push_warning("Terrainy: This node needs a noise value to create the terrain, aborting generation...")
-		return
-		
+	#if noise == null:
+		#push_warning("Terrainy: This node needs a noise value to create the terrain, aborting generation...")
+		#return
+		#
 	_set_owner_to_edited_scene_root(target_mesh)
 	
 	if target_mesh.mesh is PlaneMesh:
@@ -102,13 +107,12 @@ func create_surface(mesh_instance: MeshInstance3D = target_mesh) -> void:
 
 	var array_mesh = surface.commit()
 	mesh_data_tool.create_from_surface(array_mesh, 0)
-	
-	for vertex_idx: int in mesh_data_tool.get_vertex_count():
-		var vertex: Vector3 = mesh_data_tool.get_vertex(vertex_idx)
-		vertex.y = noise.get_noise_2d(vertex.x, vertex.z) * max_terrain_height
+
+	if noise is FastNoiseLite and noise_texture == null:
+		generate_heightmap_with_noise(noise, mesh_data_tool)
+	elif noise == null and noise_texture is CompressedTexture2D:
+		generate_heightmap_with_noise_texture(noise_texture, mesh_data_tool)
 		
-		mesh_data_tool.set_vertex(vertex_idx, vertex)
-	
 	array_mesh.clear_surfaces()
 	mesh_data_tool.commit_to_surface(array_mesh)
 	
@@ -119,8 +123,34 @@ func create_surface(mesh_instance: MeshInstance3D = target_mesh) -> void:
 	mesh_instance.mesh = surface.commit()
 	mesh_instance.create_trimesh_collision()
 	mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	
 
+
+func generate_heightmap_with_noise(selected_noise: FastNoiseLite, mesh_data_tool: MeshDataTool) -> void:
+	for vertex_idx: int in mesh_data_tool.get_vertex_count():
+		var vertex: Vector3 = mesh_data_tool.get_vertex(vertex_idx)
+		vertex.y = selected_noise.get_noise_2d(vertex.x, vertex.z) * max_terrain_height
+		
+		mesh_data_tool.set_vertex(vertex_idx, vertex)
+
+
+func generate_heightmap_with_noise_texture(selected_texture: CompressedTexture2D, mesh_data_tool: MeshDataTool) -> void:
+	var noise_image: Image = selected_texture.get_image()
+	var width = noise_image.get_width()
+	var height = noise_image.get_height()
+	
+	for vertex_idx: int in mesh_data_tool.get_vertex_count():
+		var vertex: Vector3 = mesh_data_tool.get_vertex(vertex_idx)
+		## This operation is needed to avoid being generated symmetrically only using positive values and avoid errors when obtaining the pixel from the image
+		var x = vertex.x if vertex.x > 0 else width - absf(vertex.x)
+		var z = vertex.z if vertex.z > 0 else height - absf(vertex.z)
+		
+		vertex.y = noise_image.get_pixel(x, z).r * max_terrain_height
+		
+		mesh_data_tool.set_vertex(vertex_idx, vertex)
+
+
+	
+	
 func set_terrain_size_on_plane_mesh(plane_mesh: PlaneMesh) -> void:
 	plane_mesh.size = Vector2(size_width, size_depth)
 	plane_mesh.subdivide_depth = size_depth
