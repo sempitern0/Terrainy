@@ -8,6 +8,10 @@
 
 config_version=5
 
+[Terrainy]
+
+config/ninetailsrabbit.terrainy/update_notification_enabled=true
+
 [application]
 
 config/name="Terrainy"
@@ -15,6 +19,10 @@ config/description="Quickly create natural-looking terrain with customizable noi
 config/version="1.0.0"
 config/features=PackedStringArray("4.3", "GL Compatibility")
 config/icon="res://icon.svg"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/ninetailsrabbit.terrainy/plugin.cfg")
 
 [rendering]
 

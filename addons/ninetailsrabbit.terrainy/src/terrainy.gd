@@ -30,7 +30,7 @@ extends Node
 		if value != max_terrain_height:
 			max_terrain_height = maxf(0.5, value)
 			generate_terrain()
-## If no target mesh is set, a PlaneMesh is created by default
+## The target MeshInstance3D where the mesh will be generated. If no Mesh is defined, a new PlaneMesh is created instead.
 @export var target_mesh: MeshInstance3D:
 	set(value):
 		if value != target_mesh:
