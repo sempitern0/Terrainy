@@ -149,26 +149,24 @@ func generate_heightmap_with_noise_texture(selected_texture: CompressedTexture2D
 		mesh_data_tool.set_vertex(vertex_idx, vertex)
 
 
-	
-	
 func set_terrain_size_on_plane_mesh(plane_mesh: PlaneMesh) -> void:
 	plane_mesh.size = Vector2(size_width, size_depth)
-	plane_mesh.subdivide_depth = size_depth
-	plane_mesh.subdivide_width = size_width
+	plane_mesh.subdivide_depth = size_depth * mesh_resolution
+	plane_mesh.subdivide_width = size_width * mesh_resolution
 	plane_mesh.material = terrain_material
 	
 
 func set_terrain_size_on_box_mesh(box_mesh: BoxMesh) -> void:
 	box_mesh.size = Vector3(size_width, box_mesh.size.y, size_depth)
-	box_mesh.subdivide_depth = size_depth
-	box_mesh.subdivide_width = size_width
+	box_mesh.subdivide_depth = size_depth * mesh_resolution
+	box_mesh.subdivide_width = size_width * mesh_resolution
 	box_mesh.material = terrain_material
 
 
 func set_terrain_size_on_prism_mesh(prism_mesh: PrismMesh) -> void:
 	prism_mesh.size = Vector3(size_width, prism_mesh.size.y, size_depth)
-	prism_mesh.subdivide_depth = size_depth
-	prism_mesh.subdivide_width = size_width
+	prism_mesh.subdivide_depth = size_depth * mesh_resolution
+	prism_mesh.subdivide_width = size_width * mesh_resolution
 	prism_mesh.material = terrain_material
 
 #region Helpers
