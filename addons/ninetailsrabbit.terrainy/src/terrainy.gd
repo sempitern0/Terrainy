@@ -3,49 +3,95 @@ extends Node
 
 @export var button_Generate_Terrain: String
 ## More resolution means more detail (more dense vertex) in the terrain generation, this increases the mesh subdivisions it could reduce the performance in low-spec pcs
-@export_range(1, 16, 1) var mesh_resolution: int = 1
+@export_range(1, 16, 1) var mesh_resolution: int = 1:
+	set(value):
+		if value != mesh_resolution:
+			mesh_resolution = value
+			
+			generate_terrain()
 ## The depth size of the mesh (z) in godot units (meters)
-@export var size_depth: int = 100
+@export var size_depth: int = 100:
+	set(value):
+		if value != size_depth:
+			size_depth = max(1, value)
+			
+			generate_terrain()
+			
 ## The width size of the mesh (x) in godot units (meters)
-@export var size_width: int = 100
+@export var size_width: int = 100:
+	set(value):
+		if value != size_width:
+			size_width = max(1, value)
+			
+			generate_terrain()
 ## The maximum height this terrain can have
-@export var max_terrain_height: float = 50.0
+@export var max_terrain_height: float = 50.0:
+	set(value):
+		if value != max_terrain_height:
+			max_terrain_height = maxf(0.5, value)
+			generate_terrain()
 ## If no target mesh is set, a PlaneMesh is created by default
-@export var target_mesh: MeshInstance3D
+@export var target_mesh: MeshInstance3D:
+	set(value):
+		if value != target_mesh:
+			target_mesh = value
+			update_configuration_warnings()
+			
 ## The terrain material that will be applied on the surface
 @export var terrain_material: Material
 ## Noise values are perfect to generate a variety of surfaces, higher frequencies tend to generate more mountainous terrain.
-@export var noise: FastNoiseLite
+@export var noise: FastNoiseLite:
+	set(value):
+		if value != noise:
+			noise = value
+			update_configuration_warnings()
 
+
+func _get_configuration_warnings():
+	var warnings: PackedStringArray = []
+	
+	if target_mesh == null:
+		warnings.append("No target mesh found. Expected a MeshInstance3D")
+	
+	if noise == null:
+		warnings.append("No noise found. Expected a FastNoiseLite")
+		
+	return warnings
+	
 
 func _ready() -> void:
-	if target_mesh:
-		generate_terrain(target_mesh)
-	else:
-		push_warning("Terrainy: This node needs a target mesh to create the terrain, aborting generation...")
+	generate_terrain()
 
 
-func generate_terrain(mesh_instance: MeshInstance3D = target_mesh) -> void:
-	_set_owner_to_edited_scene_root(mesh_instance)
+func generate_terrain() -> void:
+	if target_mesh == null:
+		push_warning("Terrainy: This node needs a target_mesh value to create the terrain, aborting generation...")
+		return
 	
-	if mesh_instance.mesh is PlaneMesh:
-		set_terrain_size_on_plane_mesh(mesh_instance.mesh)
-	elif mesh_instance.mesh is QuadMesh:
-		set_terrain_size_on_plane_mesh(mesh_instance.mesh)
-	elif  mesh_instance.mesh is BoxMesh:
-		set_terrain_size_on_box_mesh(mesh_instance.mesh)
-	elif mesh_instance.mesh is PrismMesh:
-		set_terrain_size_on_prism_mesh(mesh_instance.mesh)
-	elif mesh_instance.mesh is ArrayMesh:
-		mesh_instance.mesh = null
+	if noise == null:
+		push_warning("Terrainy: This node needs a noise value to create the terrain, aborting generation...")
+		return
+		
+	_set_owner_to_edited_scene_root(target_mesh)
 	
-	if mesh_instance.mesh == null:
+	if target_mesh.mesh is PlaneMesh:
+		set_terrain_size_on_plane_mesh(target_mesh.mesh)
+	elif target_mesh.mesh is QuadMesh:
+		set_terrain_size_on_plane_mesh(target_mesh.mesh)
+	elif  target_mesh.mesh is BoxMesh:
+		set_terrain_size_on_box_mesh(target_mesh.mesh)
+	elif target_mesh.mesh is PrismMesh:
+		set_terrain_size_on_prism_mesh(target_mesh.mesh)
+	elif target_mesh.mesh is ArrayMesh:
+		target_mesh.mesh = null
+	
+	if target_mesh.mesh == null:
 		var plane_mesh = PlaneMesh.new()
 		set_terrain_size_on_plane_mesh(plane_mesh)
-		mesh_instance.mesh = plane_mesh
+		target_mesh.mesh = plane_mesh
 		
-	_free_children(mesh_instance)
-	create_surface(mesh_instance)
+	_free_children(target_mesh)
+	create_surface(target_mesh)
 	
 
 func create_surface(mesh_instance: MeshInstance3D = target_mesh) -> void:
@@ -115,6 +161,6 @@ func _free_children(node: Node) -> void:
 func _on_tool_button_pressed(text: String) -> void:
 	match text:
 		"Generate Terrain":
-			generate_terrain(target_mesh)
+			generate_terrain()
 
 #endregion
