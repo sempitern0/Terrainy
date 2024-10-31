@@ -4,7 +4,7 @@
 <h3 align="center">Terrainy</h3>
 
   <p align="center">
-   Quickly create natural-looking terrain with customizable noise parameters
+   Quickly create natural-looking terrain with customizable noise parameters. This tool is designed to create simple terrains that do not require manual painting
 	<br />
 	·
 	<a href="https://github.com/ninetailsrabbit/terrainy/issues/new?assignees=ninetailsrabbit&labels=%F0%9F%90%9B+bug&projects=&template=bug_report.md&title=">Report Bug</a>
