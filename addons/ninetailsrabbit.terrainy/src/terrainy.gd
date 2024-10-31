@@ -40,6 +40,7 @@ extends Node
 ## The terrain material that will be applied on the surface
 @export var terrain_material: Material
 ## Noise values are perfect to generate a variety of surfaces, higher frequencies tend to generate more mountainous terrain.
+## Rocky: +Octaves -Period, Hills: -Octaves +Period
 @export var noise: FastNoiseLite:
 	set(value):
 		if value != noise:

@@ -17,7 +17,6 @@
 <br>
 
 - [📦 Installation](#-installation)
-  - [](#)
 - [Getting started 📝](#getting-started-)
   - [Parameters 🗻](#parameters-)
     - [Mesh resolution](#mesh-resolution)
@@ -43,8 +42,6 @@ To better understand what branch to choose from for which Godot version, please 
 |[![GodotEngine](https://img.shields.io/badge/Godot_4.3.x_stable-blue?logo=godotengine&logoColor=white)](https://godotengine.org/)|`main`|`1.x`|
 
 ---
-
-## ![](images/terrainy_showcase.gif)
 
 # Getting started 📝
 
@@ -75,13 +72,15 @@ The width size of the mesh (x) in godot units (meters)
 
 ### Max terrain height
 
-The maximum height (y) at which this terrain can be generated in godot units (meters)
+The maximum height (y) at which this terrain can be generated in godot units (meters). The noises values are in a range of _(0, 1)_. So if the noise value in a specific vertex point it's `0.5` the height returned for a `max_terrain_height` of 50 the result will be `50 * 0.5 = 25`
 
 ### Target Mesh
 
 The target `MeshInstance3D` where the mesh will be generated. If no `Mesh` for it is defined, a new `PlaneMesh` is created by default.
 
 It only supports `PlaneMesh` `QuadMesh`, `BoxMesh` and `PrismMesh`, otherwise, the `Mesh` will be deleted and a `PlaneMesh` will be assigned for terrain generation.
+
+**The final mesh will always end up as a result in an `ArrayMesh`.**
 
 ### Terrain Material
 
@@ -91,13 +90,34 @@ This is the material that will be applied to the Terrain. Take a look on [Shader
 
 This is a [FastNoiseLite](https://docs.godotengine.org/en/stable/classes/class_fastnoiselite.html#fastnoiselite) instance. Noise values are perfect to generate a variety of surfaces, higher frequencies tend to generate more mountainous terrain.
 
-Play with the parameters and different types of noise to get the result you want, take into account that if this noise is defined the `noise_texture` will be ignored.
+Play with the parameters and different types of noise to get the result you want, take into account that if this `noise` variable is defined, the `noise_texture` will be ignored.
 
 ### Noise texture
 
-Use a texture as noise to generate the terrain. **If a noise is defined, this texture will be ignored.**
+Use a texture as noise to generate the terrain. **If a `noise` is defined, this texture will be ignored.**
 
-You can find a lot of ready noise textures from this itch asset store page [https://screamingbrainstudios.itch.io/noise-texture-pack](https://screamingbrainstudios.itch.io/noise-texture-pack)
+You can find a lot of ready noise textures inside the addon in this path `addons/ninetailsrabbit.terrainy/assets/SBS - Noise Texture Pack - 256x256` folder from [ScreamingBrainStudios](https://screamingbrai.nstudios.itch.io/noise-texture-pack)
+
+This textures are divided into categories:
+
+- Cracks
+- Craters
+- Gabor
+- Grainy
+- Manifold
+- Marble
+- Melt
+- Milky
+- Perlin
+- Spokes
+- Streak
+- Super Noise
+- Super Perlin
+- Swirl
+- Techno
+- Turbulence
+- Vein
+- Voronoi
 
 # Shader materials 🏞️
 
@@ -107,51 +127,12 @@ This can be useful for some cases where you don't need a lot of detail but if yo
 
 ## Albedo terrain mix
 
-This shader can be found on [https://godotshaders.com/shader/albedo-terrain-mix-shader/](https://godotshaders.com/shader/albedo-terrain-mix-shader/)
+This addons comes with a modified shader from [DiztyNinja](https://www.youtube.com/@ditzyninja) that can be used on `terrain_material` exported parameter.
 
-I paste it here just for backup purposes in case **GodotShaders** is gone. I modified the `uv_size` to support a higher value range, which will be necessary if you use low-poly textures.
+With this shader you can mix a total of 3 textures that represents a surface based on the height of the terrain where grass represents the `top surface`, the rock represents the `medium surface` and the sand represents the `bottom_surface`.
 
-```csharp
-shader_type spatial;
+Play around with the parameters until you get the result you want.
 
-uniform sampler2D source_texture_mask : source_color;
-uniform sampler2D source_texture_black : source_color;
-uniform sampler2D source_texture_red : source_color;
-uniform sampler2D source_texture_green : source_color;
-uniform sampler2D source_texture_blue : source_color;
+You can see an example here using textures from [https://ambientcg.com/](https://ambientcg.com/)
 
-uniform float uv_size : hint_range(0.01, 100.0, 0.01) = 1.0;
-
-void fragment() {
-
-vec2 UV_Scaled = UV * uv_size;
-
-// texture_rgbmask UV is not scaled.
-vec3 texture_rgbmask = texture(source_texture_mask, UV).rgb;
-vec3 texture_black 	= texture(source_texture_black, UV_Scaled).rgb;
-vec3 texture_red 	= texture(source_texture_red, UV_Scaled).rgb;
-vec3 texture_green 	= texture(source_texture_green, UV_Scaled).rgb;
-vec3 texture_blue 	= texture(source_texture_blue, UV_Scaled).rgb;
-
-float summed_texture_channels = (
-	texture_rgbmask.r +
-	texture_rgbmask.g +
-	texture_rgbmask.b);
-
-vec3 mixed_terrain = clamp(
-		(	texture_rgbmask.r * texture_red +
-			texture_rgbmask.g * texture_green +
-			texture_rgbmask.b * texture_blue) /
-			summed_texture_channels,
-			vec3(0.0), vec3(1.0) // Clamp min, max values.
-			);
-
-ALBEDO = mix(mixed_terrain,texture_black,1.0 - summed_texture_channels);
-
-} // Fragment end
-
-```
-
-There is a well explained tutorial of the creator, He uses a terrain already imported from blender, **it works the same with a mesh generated by this plugin.**
-
-[![albedo_mix_youtube_tutorial](http://img.youtube.com/vi/MaVweI30Qo4/0.jpg)](http://www.youtube.com/watch?v=MaVweI30Qo4 "Albedo mix shader tutorial")
+![terrain_shader_example](images/terrain_shader.png)
