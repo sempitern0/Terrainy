@@ -2,6 +2,7 @@
 extends Node
 
 @export var button_Generate_Terrain: String
+@export var nav_source_group_name: StringName = &"nav_source"
 ## More resolution means more detail (more dense vertex) in the terrain generation, this increases the mesh subdivisions it could reduce the performance in low-spec pcs
 @export_range(1, 16, 1) var mesh_resolution: int = 1:
 	set(value):
@@ -52,6 +53,22 @@ extends Node
 		if value != noise_texture:
 			noise_texture = value
 			update_configuration_warnings()
+@export var elevation_curve: Curve
+## Use an image to smooth the edges on this terrain. Useful if you want to connect other plots of land
+@export var falloff_texture: CompressedTexture2D = preload("res://addons/ninetailsrabbit.terrainy/assets/falloff_images/TerrainFalloff.png"):
+	set(new_texture):
+		if new_texture != falloff_texture:
+			falloff_texture = new_texture
+			
+			if falloff_texture:
+				falloff_image = falloff_texture.get_image()
+			else:
+				falloff_image = null
+				
+			generate_terrain()
+
+var falloff_image: Image
+
 
 func _get_configuration_warnings():
 	var warnings: PackedStringArray = []
@@ -66,6 +83,9 @@ func _get_configuration_warnings():
 	
 
 func _ready() -> void:
+	if falloff_texture:
+		falloff_image = falloff_texture.get_image()
+		
 	generate_terrain()
 
 
@@ -95,7 +115,7 @@ func generate_terrain(selected_mesh: MeshInstance3D = target_mesh) -> void:
 		var plane_mesh = PlaneMesh.new()
 		set_terrain_size_on_plane_mesh(plane_mesh)
 		selected_mesh.mesh = plane_mesh
-		
+	
 	_free_children(selected_mesh)
 	create_surface(selected_mesh)
 	
@@ -124,20 +144,26 @@ func create_surface(mesh_instance: MeshInstance3D = target_mesh) -> void:
 	mesh_instance.mesh = surface.commit()
 	mesh_instance.create_trimesh_collision()
 	mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	mesh_instance.add_to_group(nav_source_group_name)
 
 
 func generate_heightmap_with_noise(selected_noise: FastNoiseLite, mesh_data_tool: MeshDataTool) -> void:
 	for vertex_idx: int in mesh_data_tool.get_vertex_count():
 		var vertex: Vector3 = mesh_data_tool.get_vertex(vertex_idx)
-		vertex.y = selected_noise.get_noise_2d(vertex.x, vertex.z) * max_terrain_height
+		## Convert to a range of 0 ~ 1 instead of -1 ~ 1
+		var noise_y: float = (selected_noise.get_noise_2d(vertex.x, vertex.z) + 1) / 2
+		noise_y = apply_elevation_curve(noise_y)
+		var falloff = calculate_falloff(vertex)
+		
+		vertex.y = noise_y * max_terrain_height * falloff
 		
 		mesh_data_tool.set_vertex(vertex_idx, vertex)
 
 
 func generate_heightmap_with_noise_texture(selected_texture: CompressedTexture2D, mesh_data_tool: MeshDataTool) -> void:
 	var noise_image: Image = selected_texture.get_image()
-	var width = noise_image.get_width()
-	var height = noise_image.get_height()
+	var width: int = noise_image.get_width()
+	var height: int = noise_image.get_height()
 	
 	for vertex_idx: int in mesh_data_tool.get_vertex_count():
 		var vertex: Vector3 = mesh_data_tool.get_vertex(vertex_idx)
@@ -145,9 +171,35 @@ func generate_heightmap_with_noise_texture(selected_texture: CompressedTexture2D
 		var x = vertex.x if vertex.x > 0 else width - absf(vertex.x)
 		var z = vertex.z if vertex.z > 0 else height - absf(vertex.z)
 		
-		vertex.y = noise_image.get_pixel(x, z).r * max_terrain_height
+		vertex.y = noise_image.get_pixel(x, z).r
+		vertex.y = apply_elevation_curve(vertex.y)
+		
+		var falloff = calculate_falloff(vertex)
+		
+		vertex.y *= max_terrain_height * falloff
 		
 		mesh_data_tool.set_vertex(vertex_idx, vertex)
+
+
+func calculate_falloff(vertex: Vector3) -> float:
+	var falloff: float = 1.0
+	
+	if falloff_image:
+		var x_percent: float = (vertex.x + (size_width / 2)) / size_width
+		var z_percent: float = (vertex.z + (size_depth / 2)) / size_depth
+		var x_pixel: int = int(x_percent * falloff_image.get_width())
+		var y_pixel: int = int(z_percent * falloff_image.get_height())
+		# In this case we can go for any channel (r,g b) as the colors are the same
+		falloff = falloff_image.get_pixel(x_pixel, y_pixel).r
+		
+	return falloff
+	
+
+func apply_elevation_curve(noise_y: float) -> float:
+	if elevation_curve:
+		noise_y = elevation_curve.sample(noise_y)
+		
+	return noise_y
 
 
 func set_terrain_size_on_plane_mesh(plane_mesh: PlaneMesh) -> void:

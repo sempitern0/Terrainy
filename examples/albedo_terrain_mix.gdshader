@@ -14,15 +14,15 @@ void fragment() {
 vec2 UV_Scaled = UV * uv_size;
 
 // texture_rgbmask UV is not scaled.
-vec3 texture_rgbmask= texture(source_texture_mask, UV).rgb; 
+vec3 texture_rgbmask= texture(source_texture_mask, UV).rgb;
 vec3 texture_black 	= texture(source_texture_black, UV_Scaled).rgb;
 vec3 texture_red 	= texture(source_texture_red, UV_Scaled).rgb;
 vec3 texture_green 	= texture(source_texture_green, UV_Scaled).rgb;
 vec3 texture_blue 	= texture(source_texture_blue, UV_Scaled).rgb;
 
 float summed_texture_channels = (
-	texture_rgbmask.r + 
-	texture_rgbmask.g + 
+	texture_rgbmask.r +
+	texture_rgbmask.g +
 	texture_rgbmask.b);
 
 vec3 mixed_terrain = clamp(
