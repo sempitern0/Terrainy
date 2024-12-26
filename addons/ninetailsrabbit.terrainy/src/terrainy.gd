@@ -2,6 +2,7 @@
 extends Node
 
 @export var button_Generate_Terrain: String
+@export_category("Terrain")
 @export var nav_source_group_name: StringName = &"nav_source"
 ## More resolution means more detail (more dense vertex) in the terrain generation, this increases the mesh subdivisions it could reduce the performance in low-spec pcs
 @export_range(1, 16, 1) var mesh_resolution: int = 1:
@@ -37,9 +38,29 @@ extends Node
 		if value != target_mesh:
 			target_mesh = value
 			update_configuration_warnings()
-			
 ## The terrain material that will be applied on the surface
 @export var terrain_material: Material
+
+@export_category("Water")
+@export var water_material: Material = preload("res://addons/ninetailsrabbit.terrainy/assets/water/simple/simple_water.tres")
+@export var water_mesh: MeshInstance3D:
+	set(value):
+		if value != water_mesh:
+			water_mesh = value
+## If the underwater mesh is not defined it will create a duplicated of the water mesh with flip faces
+@export var underwater_mesh: MeshInstance3D:
+	set(value):
+		if value != underwater_mesh:
+			underwater_mesh = value
+## The water level percent about the lowest point of this terrain
+@export_range(0, 1.0, 0.01) var water_level: float = 0.2
+## The size of the water will be the terrain size + this value to create oceans
+@export var water_size_width_extension: float = 1.0
+## The size of the water will be the terrain size + this value to create oceans
+@export var water_size_depth_extension: float = 1.0
+@export var water_scale: Vector3 = Vector3.ONE
+@export_category("Noise")
+@export var randomize_noise_seed: bool = false
 ## Noise values are perfect to generate a variety of surfaces, higher frequencies tend to generate more mountainous terrain.
 ## Rocky: +Octaves -Period, Hills: -Octaves +Period
 @export var noise: FastNoiseLite:
@@ -85,7 +106,7 @@ func _get_configuration_warnings():
 func _ready() -> void:
 	if falloff_texture:
 		falloff_image = falloff_texture.get_image()
-		
+	
 	generate_terrain()
 
 
@@ -118,6 +139,39 @@ func generate_terrain(selected_mesh: MeshInstance3D = target_mesh) -> void:
 	
 	_free_children(selected_mesh)
 	create_surface(selected_mesh)
+	create_water(water_mesh, underwater_mesh)
+
+
+func create_water(selected_water_mesh: MeshInstance3D, selected_underwater_mesh: MeshInstance3D) -> void:
+	if selected_water_mesh:
+		if water_material and selected_water_mesh.get_surface_override_material(0) == null:
+			selected_water_mesh.set_surface_override_material(0, water_material)
+			
+		selected_water_mesh.mesh.flip_faces = false
+		selected_water_mesh.global_position = target_mesh.global_position
+		selected_water_mesh.global_position.y = water_level * max_terrain_height
+		selected_water_mesh.mesh.size.x = size_width + water_size_width_extension
+		selected_water_mesh.mesh.size.y = size_depth + water_size_depth_extension
+		selected_water_mesh.scale = water_scale
+		#selected_water_mesh.mesh.subdivide_width = size_width * mesh_resolution
+		#selected_water_mesh.mesh.subdivide_depth = size_depth * mesh_resolution
+		_set_owner_to_edited_scene_root(selected_water_mesh)
+		
+		if selected_underwater_mesh == null:
+			selected_underwater_mesh = MeshInstance3D.new()
+			selected_underwater_mesh.mesh = PlaneMesh.new()
+			selected_underwater_mesh.set_surface_override_material(0, selected_water_mesh.get_surface_override_material(0).duplicate())
+			
+			selected_water_mesh.add_child(selected_underwater_mesh)
+		
+		selected_underwater_mesh.mesh.flip_faces = true
+		selected_underwater_mesh.global_position = selected_water_mesh.global_position
+		selected_underwater_mesh.mesh.size.x = selected_water_mesh.mesh.size.x
+		selected_underwater_mesh.mesh.size.y =  selected_water_mesh.mesh.size.y
+		selected_underwater_mesh.scale = selected_water_mesh.scale
+		#selected_underwater_mesh.mesh.subdivide_width = selected_water_mesh.mesh.subdivide_width
+		#selected_underwater_mesh.mesh.subdivide_depth = selected_water_mesh.mesh.subdivide_depth
+		_set_owner_to_edited_scene_root(selected_underwater_mesh)
 	
 
 func create_surface(mesh_instance: MeshInstance3D = target_mesh) -> void:
@@ -130,6 +184,9 @@ func create_surface(mesh_instance: MeshInstance3D = target_mesh) -> void:
 	mesh_data_tool.create_from_surface(array_mesh, 0)
 
 	if noise is FastNoiseLite and noise_texture == null:
+		if randomize_noise_seed:
+			noise.seed = randi()
+			
 		generate_heightmap_with_noise(noise, mesh_data_tool)
 	elif noise == null and noise_texture is CompressedTexture2D:
 		generate_heightmap_with_noise_texture(noise_texture, mesh_data_tool)
@@ -151,7 +208,7 @@ func generate_heightmap_with_noise(selected_noise: FastNoiseLite, mesh_data_tool
 	for vertex_idx: int in mesh_data_tool.get_vertex_count():
 		var vertex: Vector3 = mesh_data_tool.get_vertex(vertex_idx)
 		## Convert to a range of 0 ~ 1 instead of -1 ~ 1
-		var noise_y: float = (selected_noise.get_noise_2d(vertex.x, vertex.z) + 1) / 2
+		var noise_y: float = get_noise_y(selected_noise, vertex)
 		noise_y = apply_elevation_curve(noise_y)
 		var falloff = calculate_falloff(vertex)
 		
@@ -160,6 +217,10 @@ func generate_heightmap_with_noise(selected_noise: FastNoiseLite, mesh_data_tool
 		mesh_data_tool.set_vertex(vertex_idx, vertex)
 
 
+func get_noise_y(selected_noise: FastNoiseLite, vertex: Vector3) -> float:
+	return (selected_noise.get_noise_2d(vertex.x, vertex.z) + 1) / 2
+	
+	
 func generate_heightmap_with_noise_texture(selected_texture: CompressedTexture2D, mesh_data_tool: MeshDataTool) -> void:
 	var noise_image: Image = selected_texture.get_image()
 	var width: int = noise_image.get_width()
