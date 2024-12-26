@@ -3,7 +3,6 @@ extends Node
 
 @export var button_Generate_Terrain: String
 @export_category("Terrain")
-@export var nav_source_group_name: StringName = &"nav_source"
 ## More resolution means more detail (more dense vertex) in the terrain generation, this increases the mesh subdivisions it could reduce the performance in low-spec pcs
 @export_range(1, 16, 1) var mesh_resolution: int = 1:
 	set(value):
@@ -87,6 +86,14 @@ extends Node
 				falloff_image = null
 				
 			generate_terrain()
+@export_category("Navigation region")
+@export var nav_source_group_name: StringName = &"terrain_navigation_source"
+## This navigation needs to set the value Source Geometry -> Group Explicit
+@export var navigation_region: NavigationRegion3D
+## This will create a NavigationRegion3D automatically with the correct parameters
+@export var create_navigation_region_in_runtime: bool = false
+@export var bake_navigation_region_in_runtime: bool = false
+
 
 var falloff_image: Image
 
@@ -106,17 +113,17 @@ func _get_configuration_warnings():
 func _ready() -> void:
 	if falloff_texture:
 		falloff_image = falloff_texture.get_image()
-	
+		
 	generate_terrain()
 
 
 func generate_terrain(selected_mesh: MeshInstance3D = target_mesh) -> void:
 	if selected_mesh == null:
-		push_warning("Terrainy: This node needs a selected_mesh value to create the terrain, aborting generation...")
+		push_warning("Terrainy: This node needs a selected_mesh to create the terrain, aborting generation...")
 		return
 	
 	if noise == null and noise_texture == null:
-		push_warning("Terrainy: This node needs a noise value or texture to create the terrain, aborting generation...")
+		push_warning("Terrainy: This node needs a noise value or noise texture to create the terrain, aborting generation...")
 		return
 		
 	_set_owner_to_edited_scene_root(selected_mesh)
@@ -140,6 +147,27 @@ func generate_terrain(selected_mesh: MeshInstance3D = target_mesh) -> void:
 	_free_children(selected_mesh)
 	create_surface(selected_mesh)
 	create_water(water_mesh, underwater_mesh)
+	create_navigation_region(navigation_region)
+
+
+func create_navigation_region(selected_navigation_region: NavigationRegion3D = navigation_region) -> void:
+	if selected_navigation_region == null and create_navigation_region_in_runtime:
+		selected_navigation_region = NavigationRegion3D.new()
+		selected_navigation_region.navigation_mesh = NavigationMesh.new()
+		add_child(selected_navigation_region)
+		_set_owner_to_edited_scene_root(selected_navigation_region)
+	
+	if selected_navigation_region:
+		selected_navigation_region.navigation_mesh.geometry_parsed_geometry_type = NavigationMesh.PARSED_GEOMETRY_BOTH
+		selected_navigation_region.navigation_mesh.geometry_source_geometry_mode = NavigationMesh.SOURCE_GEOMETRY_GROUPS_EXPLICIT
+		selected_navigation_region.navigation_mesh.geometry_source_group_name = nav_source_group_name
+		
+		if bake_navigation_region_in_runtime:
+			selected_navigation_region.navigation_mesh.clear()
+			selected_navigation_region.bake_navigation_mesh()
+			await selected_navigation_region.bake_finished
+	
+	navigation_region = selected_navigation_region
 
 
 func create_water(selected_water_mesh: MeshInstance3D, selected_underwater_mesh: MeshInstance3D) -> void:
