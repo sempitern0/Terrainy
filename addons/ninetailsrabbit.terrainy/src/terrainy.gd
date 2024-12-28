@@ -278,6 +278,7 @@ func calculate_falloff(vertex: Vector3) -> float:
 		var z_percent: float = (vertex.z + (size_depth / 2)) / size_depth
 		var x_pixel: int = int(x_percent * falloff_image.get_width())
 		var y_pixel: int = int(z_percent * falloff_image.get_height())
+		
 		# In this case we can go for any channel (r,g b) as the colors are the same
 		falloff = falloff_image.get_pixel(x_pixel, y_pixel).r
 		
