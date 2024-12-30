@@ -18,15 +18,38 @@
 
 - [📦 Installation](#-installation)
 - [Getting started 📝](#getting-started-)
-  - [Parameters 🗻](#parameters-)
+  - [Terrain parameters 🗻](#terrain-parameters-)
     - [Mesh resolution](#mesh-resolution)
     - [Size depth](#size-depth)
     - [Size width](#size-width)
     - [Max terrain height](#max-terrain-height)
     - [Target Mesh](#target-mesh)
     - [Terrain Material](#terrain-material)
+  - [Water parameters 🌊](#water-parameters-)
+    - [Water Material](#water-material)
+      - [Simple water](#simple-water)
+      - [Realistic water](#realistic-water)
+    - [Water Mesh](#water-mesh)
+    - [Underwater Mesh](#underwater-mesh)
+    - [Water level](#water-level)
+    - [Water size width \& depth extension](#water-size-width--depth-extension)
+    - [Water scale](#water-scale)
+  - [Noise parameters](#noise-parameters)
+    - [Randomize noise seed](#randomize-noise-seed)
     - [Noise](#noise)
     - [Noise texture](#noise-texture)
+    - [Elevation curve](#elevation-curve)
+    - [Fallof map texture](#fallof-map-texture)
+      - [Smooth edges](#smooth-edges)
+      - [Abstract Curve](#abstract-curve)
+      - [Black Holes](#black-holes)
+      - [Center Line](#center-line)
+      - [Center Soft](#center-soft)
+      - [Circle](#circle)
+      - [Inverted Circle](#inverted-circle)
+      - [Tiny Circle](#tiny-circle)
+      - [Circle Irregular](#circle-irregular)
+      - [Vertical](#vertical)
 - [Shader materials 🏞️](#shader-materials-️)
   - [Albedo terrain mix](#albedo-terrain-mix)
 
@@ -54,9 +77,15 @@ This node will warn you in the editor that it needs:
 
 **_If you try to generate a terrain without this values a warning will be pushed to the output window but it does not interrupt the execution of your game._**
 
-## Parameters 🗻
-
 ![terrainy_parameters](images/terrainy_parameters.png)
+
+---
+
+![terrainy_parameters_2](images/terrainy_parameters_2.png)
+
+## Terrain parameters 🗻
+
+This section contains information on parameters that affects the terrain generation. Each time one of this is change in the editor, a new terrain is generated.
 
 ### Mesh resolution
 
@@ -85,6 +114,54 @@ It only supports `PlaneMesh` `QuadMesh`, `BoxMesh` and `PrismMesh`, otherwise, t
 ### Terrain Material
 
 This is the material that will be applied to the Terrain. Take a look on [Shader material](#shader-material) examples to get a detailed terrain surface mixing textures.
+
+## Water parameters 🌊
+
+This section contains information about parameters that affect the water generation for this terrain. This part is optional as it is possible that the water is generated separately in your game.
+
+![island_example](images/falloff_examples/island_example.png)
+
+---
+
+### Water Material
+
+This is the material that will be applied to the water. Both `water_mesh` and `underwater_mesh` will use the same material. We provide two premade materials that to get started:
+
+#### Simple water
+
+A custom shader that provides a simple water with wave movement, available on this addon within the path `res://addons/ninetailsrabbit.terrainy/assets/water/simple/simple_water.tres`
+
+#### Realistic water
+
+A port to Godot 4 of the shader [Godot-Realistic-Water](https://github.com/godot-extended-libraries/godot-realistic-water)
+
+Available on this addon within the path `res://addons/ninetailsrabbit.terrainy/assets/water/realistic/realistic_water.tres`
+
+### Water Mesh
+
+The mesh where the water will be set
+
+### Underwater Mesh
+
+The underwater mesh where the water will be set. This is the same as water mesh but the plugin will change the `flip_faces` to `true` so that when diving you can see the water underneath as well.
+
+### Water level
+
+The water level percent _(0 ~ 1.0)_ about the lowest point of this terrain, this takes into account the terrain `max_height` so a `water_level` of `0.5` adjust the height of the water to the midpoint of the terrain
+
+### Water size width & depth extension
+
+By default the size of the water will be the same as `size_width` and `size_depth` of the terrain. This values can be expanded on `water_size_width_extension` and `water_size_depth_extension`
+
+### Water scale
+
+The scale of the water meshes.
+
+## Noise parameters
+
+### Randomize noise seed
+
+When enabled, in each generation the seed of the selected noise will be randomized. Disable it to do it manually and keep the same seed for the generated land and not lose the structure.
 
 ### Noise
 
@@ -118,6 +195,82 @@ This textures are divided into categories:
 - Turbulence
 - Vein
 - Voronoi
+
+### Elevation curve
+
+This curve is powerful that you can adjust what the maximum height on the ground will be according to the graph from left to right in the generated noise image. This allows you to create flat mountains or holes in the generated terrain
+
+Here you can see an example:
+
+![elevation_curve](images/elevation_curve.png)
+
+### Fallof map texture
+
+Use an image to smooth the edges on the terrain. We provide a few images to get some extra shapes in the generated terrains by being able to create islands, cliffs and so on.
+
+Below I will show the images and the result of the generated plots.
+
+---
+
+#### Smooth edges
+
+![smooth_edges_texture](addons/ninetailsrabbit.terrainy/assets/falloff_images/TerrainFalloff.png)
+
+![smooth_edges](images/falloff_examples/smooth_edge_example.png)
+
+#### Abstract Curve
+
+![smooth_edges_texture](addons/ninetailsrabbit.terrainy/assets/falloff_images/TerrainFallofAbstractCurve.jpg)
+
+![abstract_curve](images/falloff_examples/abstract_curve_example.png)
+
+#### Black Holes
+
+![black_holes_texture](addons/ninetailsrabbit.terrainy/assets/falloff_images/TerrainFallofBlackHoles.webp)
+
+![black_holes](images/falloff_examples/black_holes_example.png)
+
+#### Center Line
+
+![center_line_texture](addons/ninetailsrabbit.terrainy/assets/falloff_images/TerrainFallOfCenterLine.jpg)
+
+![center_line](images/falloff_examples/center_line_example.png)
+
+#### Center Soft
+
+![center_soft_texture](addons/ninetailsrabbit.terrainy/assets/falloff_images/TerrainFallOfCenterSoft.png)
+
+![center_soft](images/falloff_examples/center_soft_example.png)
+
+#### Circle
+
+![circle_texture](addons/ninetailsrabbit.terrainy/assets/falloff_images/TerrainFalloffCircle.png)
+
+![circle](images/falloff_examples/falloff_circle_example.png)
+
+#### Inverted Circle
+
+![inverted_circle_texture](addons/ninetailsrabbit.terrainy/assets/falloff_images/TerrainFallofInvertedCircle.jpg)
+
+![inverted_circle](images/falloff_examples/inverted_circle_example.png)
+
+#### Tiny Circle
+
+![tiny_circle_texture](addons/ninetailsrabbit.terrainy/assets/falloff_images/TerrainFalloffCircleTiny.png)
+
+![tiny_circle](images/falloff_examples/falloff_circle_tiny_example.png)
+
+#### Circle Irregular
+
+![irregular_circle_texture](addons/ninetailsrabbit.terrainy/assets/falloff_images/TerrainFallofCircleIrregular.png)
+
+![circle_irregular](images/falloff_examples/circle_irregular_example.png)
+
+#### Vertical
+
+![vertical_texture](addons/ninetailsrabbit.terrainy/assets/falloff_images/TerrainFalloffVertical.jpg)
+
+![vertical](images/falloff_examples/falloff_vertical_example.png)
 
 # Shader materials 🏞️
 

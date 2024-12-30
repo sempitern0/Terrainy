@@ -1,0 +1,29 @@
+[gd_resource type="ShaderMaterial" load_steps=6 format=3 uid="uid://edg2aodbhsgk"]
+
+[ext_resource type="Shader" path="res://addons/ninetailsrabbit.terrainy/assets/water/realistic/realistic_water.gdshader" id="1_w64nr"]
+[ext_resource type="Texture2D" uid="uid://hc2sn3ehmlna" path="res://addons/ninetailsrabbit.terrainy/assets/water/realistic/Foam.png" id="2_ub3o7"]
+[ext_resource type="Texture2D" uid="uid://dd0dvo6yaom0n" path="res://addons/ninetailsrabbit.terrainy/assets/water/realistic/Water_N_A.png" id="3_srtgx"]
+[ext_resource type="Texture2D" uid="uid://di18j8qnv7dx" path="res://addons/ninetailsrabbit.terrainy/assets/water/realistic/Water_N_B.png" id="4_8ha0f"]
+[ext_resource type="Texture2D" uid="uid://c453bi8lycujo" path="res://addons/ninetailsrabbit.terrainy/assets/water/realistic/Water_UV.png" id="5_4y0cs"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_w64nr")
+shader_parameter/wave_speed = 0.5
+shader_parameter/wave_a = Vector4(1, 0.4, 0.35, 3)
+shader_parameter/wave_b = Vector4(-0.1, 0.6, 0.3, 1.55)
+shader_parameter/wave_c = Vector4(-1, -0.8, 0.25, 0.9)
+shader_parameter/sampler_scale = Vector2(0.25, 0.25)
+shader_parameter/sampler_direction = Vector2(0.05, 0.04)
+shader_parameter/uv_sampler_scale = Vector2(0.25, 0.25)
+shader_parameter/uv_sampler_strength = 0.04
+shader_parameter/foam_level = 0.75
+shader_parameter/refraction = 0.075
+shader_parameter/color_deep = Color(0.322, 0.4, 0.502, 1)
+shader_parameter/color_shallow = Color(0.659, 0.749, 0.761, 1)
+shader_parameter/beers_law = 2.0
+shader_parameter/depth_offset = -0.75
+shader_parameter/uv_sampler = ExtResource("5_4y0cs")
+shader_parameter/normalmap_a_sampler = ExtResource("3_srtgx")
+shader_parameter/normalmap_b_sampler = ExtResource("4_8ha0f")
+shader_parameter/foam_sampler = ExtResource("2_ub3o7")

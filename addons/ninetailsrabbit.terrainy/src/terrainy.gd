@@ -171,34 +171,37 @@ func create_navigation_region(selected_navigation_region: NavigationRegion3D = n
 
 
 func create_water(selected_water_mesh: MeshInstance3D, selected_underwater_mesh: MeshInstance3D) -> void:
-	if selected_water_mesh:
-		if water_material and selected_water_mesh.get_surface_override_material(0) == null:
-			selected_water_mesh.set_surface_override_material(0, water_material)
-			
+	if selected_water_mesh and water_material == null:
+		selected_water_mesh.set_surface_override_material(0, null)
+		
+	if selected_underwater_mesh and water_material == null:
+		selected_water_mesh.set_surface_override_material(0, null)
+	
+	if selected_water_mesh and water_material:
+		selected_water_mesh.set_surface_override_material(0, water_material)
 		selected_water_mesh.mesh.flip_faces = false
 		selected_water_mesh.global_position = target_mesh.global_position
 		selected_water_mesh.global_position.y = water_level * max_terrain_height
 		selected_water_mesh.mesh.size.x = size_width + water_size_width_extension
 		selected_water_mesh.mesh.size.y = size_depth + water_size_depth_extension
 		selected_water_mesh.scale = water_scale
-		#selected_water_mesh.mesh.subdivide_width = size_width * mesh_resolution
-		#selected_water_mesh.mesh.subdivide_depth = size_depth * mesh_resolution
+		selected_water_mesh.mesh.subdivide_width = size_width * mesh_resolution
+		selected_water_mesh.mesh.subdivide_depth = size_depth * mesh_resolution
 		_set_owner_to_edited_scene_root(selected_water_mesh)
 		
 		if selected_underwater_mesh == null:
 			selected_underwater_mesh = MeshInstance3D.new()
 			selected_underwater_mesh.mesh = PlaneMesh.new()
-			selected_underwater_mesh.set_surface_override_material(0, selected_water_mesh.get_surface_override_material(0).duplicate())
-			
 			selected_water_mesh.add_child(selected_underwater_mesh)
 		
+		selected_underwater_mesh.set_surface_override_material(0, selected_water_mesh.get_surface_override_material(0).duplicate())
 		selected_underwater_mesh.mesh.flip_faces = true
 		selected_underwater_mesh.global_position = selected_water_mesh.global_position
 		selected_underwater_mesh.mesh.size.x = selected_water_mesh.mesh.size.x
 		selected_underwater_mesh.mesh.size.y =  selected_water_mesh.mesh.size.y
 		selected_underwater_mesh.scale = selected_water_mesh.scale
-		#selected_underwater_mesh.mesh.subdivide_width = selected_water_mesh.mesh.subdivide_width
-		#selected_underwater_mesh.mesh.subdivide_depth = selected_water_mesh.mesh.subdivide_depth
+		selected_underwater_mesh.mesh.subdivide_width = selected_water_mesh.mesh.subdivide_width
+		selected_underwater_mesh.mesh.subdivide_depth = selected_water_mesh.mesh.subdivide_depth
 		_set_owner_to_edited_scene_root(selected_underwater_mesh)
 	
 
@@ -274,8 +277,8 @@ func calculate_falloff(vertex: Vector3) -> float:
 	var falloff: float = 1.0
 	
 	if falloff_image:
-		var x_percent: float = clampf(((vertex.x + (size_width / 2)) / size_width), 0., 1.)
-		var z_percent: float = clampf(((vertex.z + (size_depth / 2)) / size_depth), 0., 1.)
+		var x_percent: float = clampf(((vertex.x + (size_width / 2)) / size_width), 0.0, 1.0)
+		var z_percent: float = clampf(((vertex.z + (size_depth / 2)) / size_depth), 0.0, 1.0)
 		
 		var x_pixel: int = int(x_percent * (falloff_image.get_width() - 1))
 		var y_pixel: int = int(z_percent * (falloff_image.get_height() - 1))
