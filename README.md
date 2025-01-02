@@ -23,17 +23,8 @@
     - [Size depth](#size-depth)
     - [Size width](#size-width)
     - [Max terrain height](#max-terrain-height)
-    - [Target Mesh](#target-mesh)
+    - [Terrain meshes](#terrain-meshes)
     - [Terrain Material](#terrain-material)
-  - [Water parameters 🌊](#water-parameters-)
-    - [Water Material](#water-material)
-      - [Simple water](#simple-water)
-      - [Realistic water](#realistic-water)
-    - [Water Mesh](#water-mesh)
-    - [Underwater Mesh](#underwater-mesh)
-    - [Water level](#water-level)
-    - [Water size width \& depth extension](#water-size-width--depth-extension)
-    - [Water scale](#water-scale)
   - [Noise parameters](#noise-parameters)
     - [Randomize noise seed](#randomize-noise-seed)
     - [Noise](#noise)
@@ -72,7 +63,7 @@ Creating a new terrain is as easy as adding the `Terrainy` node into your scene.
 
 This node will warn you in the editor that it needs:
 
-- A `target mesh` representing a `MeshInstance3D` from which you want to generate the terrain.
+- A `terrain meshes` array representing a group of `MeshInstance3D` from which you want to generate the terrains.
 - A `noise` value with an instance of `FastNoiseLite` which is used as a template for generating the terrain surface or a custom `noise_texture`.
 
 **_If you try to generate a terrain without this values a warning will be pushed to the output window but it does not interrupt the execution of your game._**
@@ -103,59 +94,15 @@ The width size of the mesh (x) in godot units (meters)
 
 The maximum height (y) at which this terrain can be generated in godot units (meters). The noises values are in a range of _(0, 1)_. So if the noise value in a specific vertex point it's `0.5` the height returned for a `max_terrain_height` of 50 the result will be `50 * 0.5 = 25`
 
-### Target Mesh
+### Terrain meshes
 
-The target `MeshInstance3D` where the mesh will be generated. If no `Mesh` for it is defined, a new `PlaneMesh` is created by default.
-
-It only supports `PlaneMesh` `QuadMesh`, `BoxMesh` and `PrismMesh`, otherwise, the `Mesh` will be deleted and a `PlaneMesh` will be assigned for terrain generation.
+The terrain meshes `Array[MeshInstance3D]` where the terrain meshes will be generated. On each mesh a new `PlaneMesh` is generated be careful if you have a mesh already created
 
 **The final mesh will always end up as a result in an `ArrayMesh`.**
 
 ### Terrain Material
 
 This is the material that will be applied to the Terrain. Take a look on [Shader material](#shader-material) examples to get a detailed terrain surface mixing textures.
-
-## Water parameters 🌊
-
-This section contains information about parameters that affect the water generation for this terrain. This part is optional as it is possible that the water is generated separately in your game.
-
-![island_example](images/falloff_examples/island_example.png)
-
----
-
-### Water Material
-
-This is the material that will be applied to the water. Both `water_mesh` and `underwater_mesh` will use the same material. We provide two premade materials that to get started:
-
-#### Simple water
-
-A custom shader that provides a simple water with wave movement, available on this addon within the path `res://addons/ninetailsrabbit.terrainy/assets/water/simple/simple_water.tres`
-
-#### Realistic water
-
-A port to Godot 4 of the shader [Godot-Realistic-Water](https://github.com/godot-extended-libraries/godot-realistic-water)
-
-Available on this addon within the path `res://addons/ninetailsrabbit.terrainy/assets/water/realistic/realistic_water.tres`
-
-### Water Mesh
-
-The mesh where the water will be set
-
-### Underwater Mesh
-
-The underwater mesh where the water will be set. This is the same as water mesh but the plugin will change the `flip_faces` to `true` so that when diving you can see the water underneath as well.
-
-### Water level
-
-The water level percent _(0 ~ 1.0)_ about the lowest point of this terrain, this takes into account the terrain `max_height` so a `water_level` of `0.5` adjust the height of the water to the midpoint of the terrain
-
-### Water size width & depth extension
-
-By default the size of the water will be the same as `size_width` and `size_depth` of the terrain. This values can be expanded on `water_size_width_extension` and `water_size_depth_extension`
-
-### Water scale
-
-The scale of the water meshes.
 
 ## Noise parameters
 

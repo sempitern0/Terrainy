@@ -1,22 +1,24 @@
 @tool
 extends Node
 
+signal terrain_generation_finished
+
 @export var button_Generate_Terrain: String
 @export_category("Terrain")
+## When enabled, the trimesh collision is generated for the terrain
+@export var generate_collisions: bool = true
 ## More resolution means more detail (more dense vertex) in the terrain generation, this increases the mesh subdivisions it could reduce the performance in low-spec pcs
 @export_range(1, 16, 1) var mesh_resolution: int = 1:
 	set(value):
 		if value != mesh_resolution:
 			mesh_resolution = value
 			
-			generate_terrain()
 ## The depth size of the mesh (z) in godot units (meters)
 @export var size_depth: int = 100:
 	set(value):
 		if value != size_depth:
 			size_depth = max(1, value)
 			
-			generate_terrain()
 			
 ## The width size of the mesh (x) in godot units (meters)
 @export var size_width: int = 100:
@@ -24,40 +26,19 @@ extends Node
 		if value != size_width:
 			size_width = max(1, value)
 			
-			generate_terrain()
 ## The maximum height this terrain can have
 @export var max_terrain_height: float = 50.0:
 	set(value):
 		if value != max_terrain_height:
 			max_terrain_height = maxf(0.5, value)
-			generate_terrain()
 ## The target MeshInstance3D where the mesh will be generated. If no Mesh is defined, a new PlaneMesh is created instead.
-@export var target_mesh: MeshInstance3D:
+@export var terrain_meshes: Array[MeshInstance3D]:
 	set(value):
-		if value != target_mesh:
-			target_mesh = value
+		if value != terrain_meshes:
+			terrain_meshes = value
 			update_configuration_warnings()
 ## The terrain material that will be applied on the surface
 @export var terrain_material: Material
-
-@export_category("Water")
-@export var water_material: Material = preload("res://addons/ninetailsrabbit.terrainy/assets/water/simple/simple_water.tres")
-@export var water_mesh: MeshInstance3D:
-	set(value):
-		if value != water_mesh:
-			water_mesh = value
-## If the underwater mesh is not defined it will create a duplicated of the water mesh with flip faces
-@export var underwater_mesh: MeshInstance3D:
-	set(value):
-		if value != underwater_mesh:
-			underwater_mesh = value
-## The water level percent about the lowest point of this terrain
-@export_range(0, 1.0, 0.01) var water_level: float = 0.2
-## The size of the water will be the terrain size + this value to create oceans
-@export var water_size_width_extension: float = 1.0
-## The size of the water will be the terrain size + this value to create oceans
-@export var water_size_depth_extension: float = 1.0
-@export var water_scale: Vector3 = Vector3.ONE
 @export_category("Noise")
 @export var randomize_noise_seed: bool = false
 ## Noise values are perfect to generate a variety of surfaces, higher frequencies tend to generate more mountainous terrain.
@@ -85,7 +66,6 @@ extends Node
 			else:
 				falloff_image = null
 				
-			generate_terrain()
 @export_category("Navigation region")
 @export var nav_source_group_name: StringName = &"terrain_navigation_source"
 ## This navigation needs to set the value Source Geometry -> Group Explicit
@@ -96,16 +76,18 @@ extends Node
 
 
 var falloff_image: Image
+var thread: Thread
+var pending_terrain_surfaces: Array[SurfaceTool] = []
 
 
 func _get_configuration_warnings():
 	var warnings: PackedStringArray = []
 	
-	if target_mesh == null:
-		warnings.append("No target mesh found. Expected a MeshInstance3D")
+	if terrain_meshes.is_empty():
+		warnings.append("Terrainy: No target mesh found. Expected at least one MeshInstance3D")
 	
 	if noise == null and noise_texture == null:
-		warnings.append("No noise found. Expected a FastNoiseLite or a Texture2D that represents a grayscale noise")
+		warnings.append("Terrainy: No noise found. Expected a FastNoiseLite or a Texture2D that represents a grayscale noise")
 		
 	return warnings
 	
@@ -113,11 +95,32 @@ func _get_configuration_warnings():
 func _ready() -> void:
 	if falloff_texture:
 		falloff_image = falloff_texture.get_image()
+	
+	if not Engine.is_editor_hint():
+		generate_terrains()
 		
-	generate_terrain()
+
+func generate_terrains() -> void:
+	if terrain_meshes.is_empty():
+		push_warning("Terrainy: This node needs at least one mesh to create the terrain, aborting generation...")
+		return
+	
+	if not terrain_generation_finished.is_connected(on_terrain_generation_finished):
+		terrain_generation_finished.connect(on_terrain_generation_finished)
+		
+	pending_terrain_surfaces.clear()
+	
+	print("Terrainy: Generating terrains...")
+	
+	var terrain_task_id: int = WorkerThreadPool.add_group_task(process_terrain_generation, terrain_meshes.size())
+	WorkerThreadPool.wait_for_group_task_completion(terrain_task_id)
 
 
-func generate_terrain(selected_mesh: MeshInstance3D = target_mesh) -> void:
+func process_terrain_generation(index: int) -> void:
+	generate_terrain(terrain_meshes[index])
+	
+
+func generate_terrain(selected_mesh: MeshInstance3D) -> void:
 	if selected_mesh == null:
 		push_warning("Terrainy: This node needs a selected_mesh to create the terrain, aborting generation...")
 		return
@@ -126,36 +129,22 @@ func generate_terrain(selected_mesh: MeshInstance3D = target_mesh) -> void:
 		push_warning("Terrainy: This node needs a noise value or noise texture to create the terrain, aborting generation...")
 		return
 		
-	_set_owner_to_edited_scene_root(selected_mesh)
+	call_thread_safe("_set_owner_to_edited_scene_root", selected_mesh)
+	call_thread_safe("_free_children", selected_mesh)
 	
-	if selected_mesh.mesh is PlaneMesh:
-		set_terrain_size_on_plane_mesh(selected_mesh.mesh)
-	elif selected_mesh.mesh is QuadMesh:
-		set_terrain_size_on_plane_mesh(selected_mesh.mesh)
-	elif  selected_mesh.mesh is BoxMesh:
-		set_terrain_size_on_box_mesh(selected_mesh.mesh)
-	elif selected_mesh.mesh is PrismMesh:
-		set_terrain_size_on_prism_mesh(selected_mesh.mesh)
-	elif selected_mesh.mesh is ArrayMesh:
-		selected_mesh.mesh = null
-	
-	if selected_mesh.mesh == null:
-		var plane_mesh = PlaneMesh.new()
-		set_terrain_size_on_plane_mesh(plane_mesh)
-		selected_mesh.mesh = plane_mesh
-	
-	_free_children(selected_mesh)
-	create_surface(selected_mesh)
-	create_water(water_mesh, underwater_mesh)
-	create_navigation_region(navigation_region)
+	var plane_mesh = PlaneMesh.new()
+	call_thread_safe("set_terrain_size_on_plane_mesh", plane_mesh)
+	selected_mesh.set_deferred_thread_group("mesh", plane_mesh)
 
+	call_thread_safe("create_surface", selected_mesh)
+	
 
 func create_navigation_region(selected_navigation_region: NavigationRegion3D = navigation_region) -> void:
 	if selected_navigation_region == null and create_navigation_region_in_runtime:
 		selected_navigation_region = NavigationRegion3D.new()
 		selected_navigation_region.navigation_mesh = NavigationMesh.new()
-		add_child(selected_navigation_region)
-		_set_owner_to_edited_scene_root(selected_navigation_region)
+		call_thread_safe("add_child", selected_navigation_region)
+		call_thread_safe("_set_owner_to_edited_scene_root", selected_navigation_region)
 	
 	if selected_navigation_region:
 		selected_navigation_region.navigation_mesh.geometry_parsed_geometry_type = NavigationMesh.PARSED_GEOMETRY_BOTH
@@ -170,57 +159,22 @@ func create_navigation_region(selected_navigation_region: NavigationRegion3D = n
 	navigation_region = selected_navigation_region
 
 
-func create_water(selected_water_mesh: MeshInstance3D, selected_underwater_mesh: MeshInstance3D) -> void:
-	if selected_water_mesh and water_material == null:
-		selected_water_mesh.set_surface_override_material(0, null)
-		
-	if selected_underwater_mesh and water_material == null:
-		selected_water_mesh.set_surface_override_material(0, null)
-	
-	if selected_water_mesh and water_material:
-		selected_water_mesh.set_surface_override_material(0, water_material)
-		selected_water_mesh.mesh.flip_faces = false
-		selected_water_mesh.global_position = target_mesh.global_position
-		selected_water_mesh.global_position.y = water_level * max_terrain_height
-		selected_water_mesh.mesh.size.x = size_width + water_size_width_extension
-		selected_water_mesh.mesh.size.y = size_depth + water_size_depth_extension
-		selected_water_mesh.scale = water_scale
-		selected_water_mesh.mesh.subdivide_width = size_width * mesh_resolution
-		selected_water_mesh.mesh.subdivide_depth = size_depth * mesh_resolution
-		_set_owner_to_edited_scene_root(selected_water_mesh)
-		
-		if selected_underwater_mesh == null:
-			selected_underwater_mesh = MeshInstance3D.new()
-			selected_underwater_mesh.mesh = PlaneMesh.new()
-			selected_water_mesh.add_child(selected_underwater_mesh)
-		
-		selected_underwater_mesh.set_surface_override_material(0, selected_water_mesh.get_surface_override_material(0).duplicate())
-		selected_underwater_mesh.mesh.flip_faces = true
-		selected_underwater_mesh.global_position = selected_water_mesh.global_position
-		selected_underwater_mesh.mesh.size.x = selected_water_mesh.mesh.size.x
-		selected_underwater_mesh.mesh.size.y =  selected_water_mesh.mesh.size.y
-		selected_underwater_mesh.scale = selected_water_mesh.scale
-		selected_underwater_mesh.mesh.subdivide_width = selected_water_mesh.mesh.subdivide_width
-		selected_underwater_mesh.mesh.subdivide_depth = selected_water_mesh.mesh.subdivide_depth
-		_set_owner_to_edited_scene_root(selected_underwater_mesh)
-	
-
-func create_surface(mesh_instance: MeshInstance3D = target_mesh) -> void:
+func create_surface(mesh_instance: MeshInstance3D) -> void:
 	var surface = SurfaceTool.new()
 	var mesh_data_tool = MeshDataTool.new()
 	
 	surface.create_from(mesh_instance.mesh, 0)
-
+#
 	var array_mesh = surface.commit()
 	mesh_data_tool.create_from_surface(array_mesh, 0)
-
+#
 	if noise is FastNoiseLite and noise_texture == null:
 		if randomize_noise_seed:
 			noise.seed = randi()
 			
-		generate_heightmap_with_noise(noise, mesh_data_tool)
+		call_thread_safe("generate_heightmap_with_noise", noise, mesh_data_tool)
 	elif noise == null and noise_texture is CompressedTexture2D:
-		generate_heightmap_with_noise_texture(noise_texture, mesh_data_tool)
+		call_thread_safe("generate_heightmap_with_noise_texture", noise_texture, mesh_data_tool)
 		
 	array_mesh.clear_surfaces()
 	mesh_data_tool.commit_to_surface(array_mesh)
@@ -228,11 +182,11 @@ func create_surface(mesh_instance: MeshInstance3D = target_mesh) -> void:
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
 	surface.create_from(array_mesh, 0)
 	surface.generate_normals()
-
-	mesh_instance.mesh = surface.commit()
-	mesh_instance.create_trimesh_collision()
-	mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	mesh_instance.add_to_group(nav_source_group_name)
+	
+	pending_terrain_surfaces.append(surface)
+	
+	if pending_terrain_surfaces.size() == terrain_meshes.size():
+		call_deferred_thread_group("emit_signal", "terrain_generation_finished")
 
 
 func generate_heightmap_with_noise(selected_noise: FastNoiseLite, mesh_data_tool: MeshDataTool) -> void:
@@ -240,7 +194,7 @@ func generate_heightmap_with_noise(selected_noise: FastNoiseLite, mesh_data_tool
 		var vertex: Vector3 = mesh_data_tool.get_vertex(vertex_idx)
 		## Convert to a range of 0 ~ 1 instead of -1 ~ 1
 		var noise_y: float = get_noise_y(selected_noise, vertex)
-		noise_y = apply_elevation_curve(noise_y)
+		noise_y = apply_elevation_curve (noise_y)
 		var falloff = calculate_falloff(vertex)
 		
 		vertex.y = noise_y * max_terrain_height * falloff
@@ -264,9 +218,9 @@ func generate_heightmap_with_noise_texture(selected_texture: CompressedTexture2D
 		var z = vertex.z if vertex.z > 0 else height - absf(vertex.z)
 		
 		vertex.y = noise_image.get_pixel(x, z).r
-		vertex.y = apply_elevation_curve(vertex.y)
+		vertex.y = call_thread_safe("apply_elevation_curve", vertex.y)
 		
-		var falloff = calculate_falloff(vertex)
+		var falloff = call_thread_safe("calculate_falloff", vertex)
 		
 		vertex.y *= max_terrain_height * falloff
 		
@@ -301,25 +255,12 @@ func set_terrain_size_on_plane_mesh(plane_mesh: PlaneMesh) -> void:
 	plane_mesh.subdivide_depth = size_depth * mesh_resolution
 	plane_mesh.subdivide_width = size_width * mesh_resolution
 	plane_mesh.material = terrain_material
-	
 
-func set_terrain_size_on_box_mesh(box_mesh: BoxMesh) -> void:
-	box_mesh.size = Vector3(size_width, box_mesh.size.y, size_depth)
-	box_mesh.subdivide_depth = size_depth * mesh_resolution
-	box_mesh.subdivide_width = size_width * mesh_resolution
-	box_mesh.material = terrain_material
-
-
-func set_terrain_size_on_prism_mesh(prism_mesh: PrismMesh) -> void:
-	prism_mesh.size = Vector3(size_width, prism_mesh.size.y, size_depth)
-	prism_mesh.subdivide_depth = size_depth * mesh_resolution
-	prism_mesh.subdivide_width = size_width * mesh_resolution
-	prism_mesh.material = terrain_material
 
 #region Helpers
 func _set_owner_to_edited_scene_root(node: Node) -> void:
-	if Engine.is_editor_hint() and node.get_tree():
-		node.owner = node.get_tree().edited_scene_root
+	if Engine.is_editor_hint():
+		node.owner = get_tree().edited_scene_root
 
 
 func _free_children(node: Node) -> void:
@@ -336,6 +277,22 @@ func _free_children(node: Node) -> void:
 func _on_tool_button_pressed(text: String) -> void:
 	match text:
 		"Generate Terrain":
-			generate_terrain()
+			generate_terrains()
 
+
+func on_terrain_generation_finished() -> void:
+	print("Terrainy: Generation of %d terrain meshes is finished! " % terrain_meshes.size())
+	
+	for i in pending_terrain_surfaces.size():
+		var terrain_mesh: MeshInstance3D = terrain_meshes[i]
+		terrain_mesh.mesh = pending_terrain_surfaces[i].commit() 
+	
+		if generate_collisions:
+			terrain_mesh.create_trimesh_collision()
+			
+		terrain_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		terrain_mesh.add_to_group(nav_source_group_name)
+	
+	create_navigation_region(navigation_region)
+	
 #endregion
