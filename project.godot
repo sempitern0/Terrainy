@@ -8,6 +8,10 @@
 
 config_version=5
 
+[Terrainy]
+
+config/ninetailsrabbit.terrainy/update_notification_enabled=true
+
 [application]
 
 config/name="Terrainy"
