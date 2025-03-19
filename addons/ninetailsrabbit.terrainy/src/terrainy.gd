@@ -211,6 +211,10 @@ func generate_heightmap_with_noise_texture(selected_texture: CompressedTexture2D
 	var width: int = noise_image.get_width()
 	var height: int = noise_image.get_height()
 	
+	## To avoid the error cannot get_pixel on compressed image
+	if noise_image.is_compressed():
+		noise_image.decompress()
+	
 	for vertex_idx: int in mesh_data_tool.get_vertex_count():
 		var vertex: Vector3 = mesh_data_tool.get_vertex(vertex_idx)
 		## This operation is needed to avoid being generated symmetrically only using positive values and avoid errors when obtaining the pixel from the image
@@ -231,6 +235,9 @@ func calculate_falloff(vertex: Vector3) -> float:
 	var falloff: float = 1.0
 	
 	if falloff_image:
+		if falloff_image.is_compressed():
+			falloff_image.decompress()
+			
 		var x_percent: float = clampf(((vertex.x + (size_width / 2)) / size_width), 0.0, 1.0)
 		var z_percent: float = clampf(((vertex.z + (size_depth / 2)) / size_depth), 0.0, 1.0)
 		
