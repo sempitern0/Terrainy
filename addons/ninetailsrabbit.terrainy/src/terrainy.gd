@@ -8,7 +8,7 @@ signal terrain_generation_finished
 ## When enabled, the trimesh collision is generated for the terrain
 @export var generate_collisions: bool = true
 ## More resolution means more detail (more dense vertex) in the terrain generation, this increases the mesh subdivisions it could reduce the performance in low-spec pcs
-@export_range(1, 16, 1) var mesh_resolution: int = 1:
+@export_range(2, 1024, 2) var mesh_resolution: int = 64:
 	set(value):
 		if value != mesh_resolution:
 			mesh_resolution = value
@@ -259,8 +259,8 @@ func apply_elevation_curve(noise_y: float) -> float:
 
 func set_terrain_size_on_plane_mesh(plane_mesh: PlaneMesh) -> void:
 	plane_mesh.size = Vector2(size_width, size_depth)
-	plane_mesh.subdivide_depth = size_depth * mesh_resolution
-	plane_mesh.subdivide_width = size_width * mesh_resolution
+	plane_mesh.subdivide_depth = mesh_resolution
+	plane_mesh.subdivide_width = mesh_resolution
 	plane_mesh.material = terrain_material
 
 
