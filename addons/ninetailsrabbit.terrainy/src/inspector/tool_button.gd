@@ -18,7 +18,9 @@ func _init(obj: Object, text:String):
 	match text:
 		"Generate Terrain":
 			emoji = "⛰️"
-	
+		"Generate Diorama":
+			emoji = "⛰️"
+			
 	button.size_flags_horizontal = SIZE_EXPAND_FILL
 	button.flat = false
 	button.text = "%s %s" % [emoji, text]

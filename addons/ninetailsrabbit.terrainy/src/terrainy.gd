@@ -1,5 +1,5 @@
 @tool
-extends Node
+class_name Terrainy extends Node
 
 signal terrain_generation_finished
 
@@ -18,7 +18,6 @@ signal terrain_generation_finished
 	set(value):
 		if value != size_depth:
 			size_depth = max(1, value)
-			
 			
 ## The width size of the mesh (x) in godot units (meters)
 @export var size_width: int = 100:
@@ -137,7 +136,7 @@ func generate_terrain(selected_mesh: MeshInstance3D) -> void:
 	selected_mesh.set_deferred_thread_group("mesh", plane_mesh)
 
 	call_thread_safe("create_surface", selected_mesh)
-	
+
 
 func create_navigation_region(selected_navigation_region: NavigationRegion3D = navigation_region) -> void:
 	if selected_navigation_region == null and create_navigation_region_in_runtime:
@@ -193,7 +192,7 @@ func generate_heightmap_with_noise(selected_noise: FastNoiseLite, mesh_data_tool
 	for vertex_idx: int in mesh_data_tool.get_vertex_count():
 		var vertex: Vector3 = mesh_data_tool.get_vertex(vertex_idx)
 		## Convert to a range of 0 ~ 1 instead of -1 ~ 1
-		var noise_y: float = get_noise_y(selected_noise, vertex)
+		var noise_y: float = TerrainyCore.get_noise_y_normalized(selected_noise, vertex)
 		noise_y = apply_elevation_curve (noise_y)
 		var falloff = calculate_falloff(vertex)
 		
