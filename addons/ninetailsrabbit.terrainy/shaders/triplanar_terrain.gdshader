@@ -2,17 +2,17 @@ shader_type spatial;
 
 render_mode blend_mix,depth_draw_opaque,cull_back,diffuse_burley,specular_schlick_ggx;
 
-
 uniform float blend_factor : hint_range(0.1, 50.0) = 5.0;
 uniform float fade_range = 5.0;
 uniform float height_dirt = 5.0;
 uniform float height_grass = 15.0;
 uniform float height_mountain = 30.0;
+uniform float roughness : hint_range(0.0, 1.0) = 1.0;
+uniform float ao_light_affect : hint_range(0.0, 1.0);
 
 group_uniforms Dirt;
 uniform sampler2D dirt_albedo : source_color, repeat_enable, filter_linear_mipmap, hint_default_white;
-uniform sampler2D dirt_normal : hint_normal, filter_linear_mipmap, repeat_enable;
-
+uniform sampler2D dirt_orm : source_color;
 uniform float dirt_blend_sharpness = 1.0;
 uniform float dirt_uv_scale : hint_range(0.01, 10.0, 0.01) = 1.0;
 uniform float dirt_stochastic_strength : hint_range(0.0, 1.0) = 0;
@@ -20,7 +20,7 @@ uniform float dirt_stochastic_rotation_max_angle : hint_range(0.0, 3.14159) = 0;
 
 group_uniforms Grass;
 uniform sampler2D grass_albedo : source_color, repeat_enable, filter_linear_mipmap, hint_default_white;
-uniform sampler2D grass_normal : hint_normal, filter_linear_mipmap, repeat_enable;
+uniform sampler2D grass_orm : source_color;
 uniform float grass_blend_sharpness = 1.0;
 uniform float grass_uv_scale : hint_range(0.01, 10.0, 0.01) = 1.0;
 uniform float grass_stochastic_strength : hint_range(0.0, 1.0) = 0;
@@ -28,7 +28,7 @@ uniform float grass_stochastic_rotation_max_angle : hint_range(0.0, 3.14159) = 0
 
 group_uniforms Mountain;
 uniform sampler2D mountain_albedo : source_color, repeat_enable, filter_linear_mipmap, hint_default_white;
-uniform sampler2D mountain_normal : hint_normal, filter_linear_mipmap, repeat_enable;
+uniform sampler2D mountain_orm : source_color;
 uniform float mountain_blend_sharpness = 1.0;
 uniform float mountain_uv_scale : hint_range(0.01, 10.0, 0.01) = 1.0;
 uniform float mountain_stochastic_strength : hint_range(0.0, 1.0) = 0;
@@ -335,6 +335,10 @@ void fragment() {
         dirt_stochastic_strength,
         dirt_stochastic_rotation_max_angle
     );
+	
+	vec3 orm_dirt = texture(dirt_albedo, UV * dirt_uv_scale).rgb;
+	vec3 orm_grass = texture(grass_albedo, UV * grass_uv_scale).rgb;
+	vec3 orm_mountain = texture(mountain_albedo, UV * mountain_uv_scale).rgb;
 
 	  vec3 albedo_grass = apply_triplanar_texture_stochastic_rgb(
         grass_albedo,
@@ -354,43 +358,12 @@ void fragment() {
         mountain_stochastic_rotation_max_angle
     );
 
-	 vec3 normal_dirt = apply_triplanar_texture_stochastic_normal(
-        dirt_normal,
-        world_pos * dirt_uv_scale,
-        triplanar_normal_abs,
-        blend_factor,
-        dirt_stochastic_strength,
-        dirt_stochastic_rotation_max_angle
-    );
-
-    vec3 normal_grass = apply_triplanar_texture_stochastic_normal(
-        grass_normal,
-        world_pos * grass_uv_scale,
-        triplanar_normal_abs,
-        blend_factor,
-        grass_stochastic_strength,
-        grass_stochastic_rotation_max_angle
-    );
-
-    vec3 normal_mountain = apply_triplanar_texture_stochastic_normal(
-        mountain_normal,
-        world_pos * mountain_uv_scale,
-        triplanar_normal_abs,
-        blend_factor,
-        mountain_stochastic_strength,
-        mountain_stochastic_rotation_max_angle
-    );
-
- 	vec3 blended_normal = normalize(
-        normal_dirt * blend_dirt +
-        normal_grass * blend_grass +
-        normal_mountain * blend_mountain
-    );
-
+	vec3 mixed_orm = mix(orm_dirt, orm_grass, blend_factor);
+	mixed_orm = mix(mixed_orm, orm_mountain, blend_factor);
+	
 	ALBEDO = albedo_dirt * blend_dirt + albedo_grass * blend_grass + albedo_mountain * blend_mountain;
-    NORMAL = blended_normal;
-
-	ROUGHNESS = 1.0;
-    METALLIC = 0.0;
-    AO = 1.0;
+	AO = mixed_orm.r;
+	AO_LIGHT_AFFECT = ao_light_affect;
+	ROUGHNESS = mixed_orm.g * roughness;
+	METALLIC = mixed_orm.b;
 }

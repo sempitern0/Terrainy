@@ -5,7 +5,7 @@ class_name Dioraimy extends Node3D
 @export_category("Diorama")
 @export var layers: Array[Vector3] = []
 ## More resolution means more detail (more dense vertex) in the diorama generation, this increases the mesh subdivisions it could reduce the performance in low-spec pcs
-@export_range(2.0, 32.0, 2.0) var mesh_resolution: float = 16.0
+@export_range(2, 2048, 2) var mesh_resolution: int = 32
 @export var amplitude: float = 0.0
 @export var randomize_noise_seed: bool = true
 @export var noise: FastNoiseLite

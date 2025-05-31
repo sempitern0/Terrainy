@@ -8,11 +8,7 @@ signal terrain_generation_finished
 ## When enabled, the trimesh collision is generated for the terrain
 @export var generate_collisions: bool = true
 ## More resolution means more detail (more dense vertex) in the terrain generation, this increases the mesh subdivisions it could reduce the performance in low-spec pcs
-@export_range(2, 1024, 2) var mesh_resolution: int = 64:
-	set(value):
-		if value != mesh_resolution:
-			mesh_resolution = value
-			
+@export_range(2, 2048, 2) var mesh_resolution: int = 64
 ## The depth size of the mesh (z) in godot units (meters)
 @export var size_depth: int = 100:
 	set(value):

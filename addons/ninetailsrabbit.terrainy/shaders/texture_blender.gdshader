@@ -20,9 +20,9 @@ void fragment() {
 	vec4 secondary_albedo = texture(secondary_texture, secondary_texture_uv_scale);
 
 	vec4 blend_noise_texture = texture(blend_noise, UV);
-	
+
 	vec3 final_albedo = mix(vec3(main_albedo.xyz), vec3(secondary_albedo.xyz), vec3(blend_noise_texture.xyz));
-	
+
 	// Makes the final texture uniform decomposing & composing the rgb channels
 	vec3 albedo_rgb_to_hsv;
 
@@ -33,7 +33,7 @@ void fragment() {
 		vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
 		float d = q.x - min(q.w, q.y);
 		float e = 1.0e-10;
-		
+
 		albedo_rgb_to_hsv = vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
 	}
 
@@ -44,7 +44,7 @@ void fragment() {
 
 	// VectorCompose:
 	vec3 rgb_composed = vec3(rgb_x, rgb_y, rgb_z);
-	
+
 	vec3 albedo_hsv_to_rgb;
 	{
 		vec3 c = rgb_composed;
