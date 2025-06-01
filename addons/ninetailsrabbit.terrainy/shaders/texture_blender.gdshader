@@ -1,33 +1,92 @@
 shader_type spatial;
 render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_lambert, specular_schlick_ggx;
 
-uniform sampler2D main_texture : source_color;
-uniform float main_uv_scale = 1.0;
-uniform sampler2D secondary_texture : source_color;
-uniform float secondary_uv_scale = 1.0;
 uniform sampler2D blend_noise : source_color;
 
-// Helper function to unpack a normal from 0-1 range (texture) to -1 to 1 range (vector).
-vec3 unpack_normal(vec3 packed_normal) {
-    return packed_normal * 2.0 - 1.0;
+group_uniforms MainTexture;
+uniform sampler2D main_texture : source_color, repeat_enable, filter_linear_mipmap;
+uniform float main_uv_scale = 1.0;
+uniform vec3 main_uv_offset;
+uniform bool main_uv_triplanar = false;
+uniform float main_uv_blend_sharpness: hint_range(0.0, 150.0, 0.001) = 1.0;
+
+group_uniforms SecondaryTexture;
+uniform sampler2D secondary_texture : source_color, repeat_enable, filter_linear_mipmap;
+uniform float secondary_uv_scale = 1.0;
+uniform vec3 secondary_uv_offset;
+uniform bool secondary_uv_triplanar = false;
+uniform float secondary_uv_blend_sharpness : hint_range(0.0, 150.0, 0.001) = 1.0;
+
+varying vec3 main_uv_power_normal;
+varying vec3 main_uv_triplanar_pos;
+varying vec3 secondary_uv_power_normal;
+varying vec3 secondary_uv_triplanar_pos;
+
+vec4 triplanar_texture(sampler2D p_sampler, vec3 p_weights, vec3 p_triplanar_pos) {
+	vec4 sampler = vec4(0.0);
+	
+	sampler += texture(p_sampler, p_triplanar_pos.xy) * p_weights.z;
+	sampler += texture(p_sampler, p_triplanar_pos.xz) * p_weights.y;
+	sampler += texture(p_sampler, p_triplanar_pos.zy * vec2(-1.0, 1.0)) * p_weights.x;
+	
+	return sampler;
 }
 
+void vertex() {
+	vec3 normal = NORMAL;
+
+	TANGENT = vec3(0.0, 0.0, -1.0) * abs(normal.x);
+	TANGENT += vec3(1.0, 0.0, 0.0) * abs(normal.y);
+	TANGENT += vec3(1.0, 0.0, 0.0) * abs(normal.z);
+	TANGENT = normalize(TANGENT);
+
+	BINORMAL = vec3(0.0, 1.0, 0.0) * abs(normal.x);
+	BINORMAL += vec3(0.0, 0.0, -1.0) * abs(normal.y);
+	BINORMAL += vec3(0.0, 1.0, 0.0) * abs(normal.z);
+	BINORMAL = normalize(BINORMAL);
+	
+	// Main UV Triplanar: Enabled
+	if (main_uv_triplanar) {
+		main_uv_power_normal = pow(abs(NORMAL), vec3(main_uv_blend_sharpness));
+		main_uv_triplanar_pos = VERTEX * main_uv_scale + main_uv_offset;
+		main_uv_power_normal /= dot(main_uv_power_normal, vec3(1.0));
+		main_uv_triplanar_pos *= vec3(1.0, -1.0, 1.0);
+	}
+	// Secondary UV Triplanar: Enabled
+	if (secondary_uv_triplanar) {
+		secondary_uv_power_normal = pow(abs(NORMAL), vec3(secondary_uv_blend_sharpness));
+		secondary_uv_triplanar_pos = VERTEX * secondary_uv_scale + secondary_uv_offset;
+		secondary_uv_power_normal /= dot(secondary_uv_power_normal, vec3(1.0));
+		secondary_uv_triplanar_pos *= vec3(1.0, -1.0, 1.0);
+	}
+}
+
+
 void fragment() {
-	vec2 main_texture_uv_scale = UV * vec2(main_uv_scale);
-	vec4 main_albedo = texture(main_texture, main_texture_uv_scale);
+	vec4 main_albedo;
+	
+	if (main_uv_triplanar) {
+		main_albedo = triplanar_texture(main_texture, main_uv_power_normal, main_uv_triplanar_pos);
+	} else {
+		main_albedo = texture(main_texture, UV * vec2(main_uv_scale));
+	}
 
-	vec2 secondary_texture_uv_scale = UV * vec2(secondary_uv_scale);
-	vec4 secondary_albedo = texture(secondary_texture, secondary_texture_uv_scale);
-
+	vec4 secondary_albedo;
+	
+	if (secondary_uv_triplanar) {
+		secondary_albedo = triplanar_texture(secondary_texture, secondary_uv_power_normal, secondary_uv_triplanar_pos);
+	} else {
+		secondary_albedo = texture(secondary_texture, UV * vec2(secondary_uv_scale));
+	}
+	
 	vec4 blend_noise_texture = texture(blend_noise, UV);
-
-	vec3 final_albedo = mix(vec3(main_albedo.xyz), vec3(secondary_albedo.xyz), vec3(blend_noise_texture.xyz));
+	vec3 blended_albedo = mix(vec3(main_albedo.xyz), vec3(secondary_albedo.xyz), vec3(blend_noise_texture.xyz));
 
 	// Makes the final texture uniform decomposing & composing the rgb channels
 	vec3 albedo_rgb_to_hsv;
 
 	{
-		vec3 c = final_albedo;
+		vec3 c = blended_albedo;
 		vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
 		vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
 		vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
@@ -45,13 +104,13 @@ void fragment() {
 	// VectorCompose:
 	vec3 rgb_composed = vec3(rgb_x, rgb_y, rgb_z);
 
-	vec3 albedo_hsv_to_rgb;
+	vec3 final_rgb_albedo;
 	{
 		vec3 c = rgb_composed;
 		vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
 		vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
-		albedo_hsv_to_rgb = c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+		final_rgb_albedo = c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
 	}
 
-	ALBEDO = albedo_hsv_to_rgb;
+	ALBEDO = final_rgb_albedo;
 }

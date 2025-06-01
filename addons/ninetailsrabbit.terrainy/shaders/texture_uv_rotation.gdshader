@@ -1,8 +1,8 @@
 shader_type spatial;
 render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_lambert, specular_schlick_ggx;
 
-uniform sampler2D albedo_texture : source_color;
-uniform sampler2D albedo_seam : source_color;
+uniform sampler2D albedo_texture : source_color, repeat_enable, filter_linear_mipmap;
+uniform sampler2D albedo_seam : source_color, repeat_enable, filter_linear_mipmap;
 
 uniform float uv_scale = 1.0;
 uniform vec2 pivot_point = vec2(0.500000, 0.500000);

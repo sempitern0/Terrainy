@@ -32,6 +32,7 @@ func generate_diorama() -> void:
 		
 		if noise and layer == 1:
 			var top_y_threshold = layer_dimensions.y / 2.0
+			var bottom_y_threshold = -top_y_threshold
 			
 			if randomize_noise_seed:
 				noise.seed = randi()
@@ -42,9 +43,8 @@ func generate_diorama() -> void:
 				if is_equal_approx(vertex.y, top_y_threshold):
 					var noise_value = TerrainyCore.get_noise_y_normalized(noise, vertex)
 					vertex.y = top_y_threshold + noise_value * (amplitude if amplitude > 0.0 else 1.0)
-					
 					mesh_data_tool.set_vertex(vertex_idx, vertex)
-			
+		
 			array_mesh.clear_surfaces()
 			
 		mesh_data_tool.commit_to_surface(array_mesh)
@@ -54,9 +54,11 @@ func generate_diorama() -> void:
 		surface.generate_normals()
 		
 		diorama_mesh.mesh = surface.commit()
-		diorama_mesh.create_trimesh_collision()
-		diorama_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		
+		if layer == 1:
+			diorama_mesh.create_trimesh_collision()
+			
+		diorama_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		
 		if layer > 1:
 			diorama_mesh.position.y = Vector3.DOWN.y * (last_diorama_height / 2.0 + layer_dimensions.y / 2.0)
