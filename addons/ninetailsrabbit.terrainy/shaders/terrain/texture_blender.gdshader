@@ -2,9 +2,11 @@ shader_type spatial;
 render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_lambert, specular_schlick_ggx;
 
 uniform sampler2D blend_noise : source_color;
+uniform float normal_map_depth: hint_range(0.0, 3.0, 0.1) = 1.0;
 
 group_uniforms MainTexture;
 uniform sampler2D main_texture : source_color, repeat_enable, filter_linear_mipmap;
+uniform sampler2D main_normal: hint_normal;
 uniform float main_uv_scale = 1.0;
 uniform vec3 main_uv_offset;
 uniform bool main_uv_triplanar = false;
@@ -12,6 +14,7 @@ uniform float main_uv_blend_sharpness: hint_range(0.0, 150.0, 0.001) = 1.0;
 
 group_uniforms SecondaryTexture;
 uniform sampler2D secondary_texture : source_color, repeat_enable, filter_linear_mipmap;
+uniform sampler2D secondary_normal: hint_normal;
 uniform float secondary_uv_scale = 1.0;
 uniform vec3 secondary_uv_offset;
 uniform bool secondary_uv_triplanar = false;
@@ -21,6 +24,9 @@ varying vec3 main_uv_power_normal;
 varying vec3 main_uv_triplanar_pos;
 varying vec3 secondary_uv_power_normal;
 varying vec3 secondary_uv_triplanar_pos;
+
+varying vec3 world_position;
+
 
 vec4 triplanar_texture(sampler2D p_sampler, vec3 p_weights, vec3 p_triplanar_pos) {
 	vec4 sampler = vec4(0.0);
@@ -32,7 +38,55 @@ vec4 triplanar_texture(sampler2D p_sampler, vec3 p_weights, vec3 p_triplanar_pos
 	return sampler;
 }
 
+// Cheapest method, better performance and good results.
+vec3 simple_blending(vec3 a, vec3 b) {
+	a = a * 2.0 - 1.0;
+	b = b * 2.0 - 1.0;
+	
+	vec3 result = vec3(a.xy + b.xy, 1.0);
+	
+	return result * 0.5 + 0.5;
+}
+
+// Better results but more performant cost
+vec3 unity_blending(vec3 a, vec3 b) {
+	a = a * 2.0 - 1.0;
+	b = b * 2.0 - 1.0;
+	
+	mat3 basis = mat3(
+		vec3(a.z, a.y, -a.x),
+		vec3(a.x, a.z, -a.y),
+		a
+	);
+	
+	vec3 result = normalize(basis * b);
+	
+	return result * 0.5 + 0.5;
+}
+
+// Performance friendly, good results
+vec3 whiteout_blending(vec3 a, vec3 b) {
+	a = a * 2.0 - 1.0;
+	b = b * 2.0 - 1.0;
+	
+	vec3 result = normalize(vec3(a.xy + b.xy, a.z * b.z));
+	
+	return result * 0.5 + 0.5;
+}
+
+// Similar to whiteout but only uses the z from the main normal
+vec3 udm_blending(vec3 a, vec3 b) {
+	a = a * 2.0 - 1.0;
+	b = b * 2.0 - 1.0;
+	
+	vec3 result = normalize(vec3(a.xy + b.xy, a.z));
+	
+	return result * 0.5 + 0.5;
+}
+
+
 void vertex() {
+	world_position = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	vec3 normal = NORMAL;
 
 	TANGENT = vec3(0.0, 0.0, -1.0) * abs(normal.x);
@@ -64,24 +118,33 @@ void vertex() {
 
 void fragment() {
 	vec4 main_albedo;
+	vec3 m_normal;
+	vec3 s_normal;
 	
 	if (main_uv_triplanar) {
 		main_albedo = triplanar_texture(main_texture, main_uv_power_normal, main_uv_triplanar_pos);
+		m_normal = texture(main_normal, world_position.xz * main_uv_scale).rgb;
 	} else {
 		main_albedo = texture(main_texture, UV * vec2(main_uv_scale));
+		m_normal = texture(main_normal, UV * vec2(main_uv_scale)).rgb;
 	}
 
 	vec4 secondary_albedo;
 	
 	if (secondary_uv_triplanar) {
 		secondary_albedo = triplanar_texture(secondary_texture, secondary_uv_power_normal, secondary_uv_triplanar_pos);
+		s_normal = texture(secondary_normal, world_position.xz * secondary_uv_scale).rgb;
+	
 	} else {
 		secondary_albedo = texture(secondary_texture, UV * vec2(secondary_uv_scale));
+		s_normal = texture(secondary_normal, UV * vec2(secondary_uv_scale)).rgb;
 	}
 	
 	vec4 blend_noise_texture = texture(blend_noise, UV);
 	vec3 blended_albedo = mix(vec3(main_albedo.xyz), vec3(secondary_albedo.xyz), vec3(blend_noise_texture.xyz));
-
+		
+	vec3 combined_normal = whiteout_blending(m_normal, s_normal);
+	
 	// Makes the final texture uniform decomposing & composing the rgb channels
 	vec3 albedo_rgb_to_hsv;
 
@@ -113,4 +176,6 @@ void fragment() {
 	}
 
 	ALBEDO = final_rgb_albedo;
+	NORMAL_MAP = combined_normal;
+	NORMAL_MAP_DEPTH = normal_map_depth;
 }
