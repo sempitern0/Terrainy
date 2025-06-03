@@ -1,5 +1,5 @@
 @tool
-class_name Dioraimy extends Node3D
+class_name Dioramy extends Node3D
 
 @export var button_Generate_Diorama: String
 @export_category("Diorama")
