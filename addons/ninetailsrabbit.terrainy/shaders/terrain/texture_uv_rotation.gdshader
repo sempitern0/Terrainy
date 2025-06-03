@@ -1,5 +1,5 @@
 shader_type spatial;
-render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_lambert, specular_schlick_ggx;
+render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_burley, specular_schlick_ggx;
 
 uniform sampler2D albedo_texture : source_color, repeat_enable, filter_linear_mipmap;
 uniform sampler2D albedo_seam : source_color, repeat_enable, filter_linear_mipmap;
@@ -7,7 +7,12 @@ uniform sampler2D albedo_seam : source_color, repeat_enable, filter_linear_mipma
 uniform float uv_scale = 1.0;
 uniform vec2 pivot_point = vec2(0.500000, 0.500000);
 
+// Noise type should be "cellular", fractal type "none" and return type "cell_value"
 uniform sampler2D rotation_noise : source_color;
+
+// This Noise type should be exactly the same as the rotation noise except for return type as "distance2sub"
+// When changing any parameter of the rotation noise, the seam mending noise must be updated too
+// The color ramp needs to be from white(left) and black(right) so the seams can be hidden.
 uniform sampler2D seam_mending_noise : source_color;
 
 
@@ -26,7 +31,6 @@ void fragment() {
 		float __output_range = output_max_value - output_min_value;
 		rotation_degrees = output_min_value + __output_range * ((texture(rotation_noise, UV).x - input_min_value) / __input_range);
 	}
-
 
 	vec2 final_albedo;
 	

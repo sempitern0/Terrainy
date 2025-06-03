@@ -11,6 +11,8 @@ uniform float roughness : hint_range(0.0, 1.0);
 
 group_uniforms MainTexture;
 uniform sampler2D main_texture : source_color, repeat_enable, filter_linear_mipmap;
+uniform vec4 main_texture_color : source_color = vec4(1.0);
+
 uniform float main_uv_scale = 1.0;
 uniform vec3 main_uv_offset;
 uniform bool main_uv_triplanar = false;
@@ -19,6 +21,7 @@ uniform sampler2D main_normal: hint_roughness_normal, filter_linear_mipmap, repe
 
 group_uniforms SecondaryTexture;
 uniform sampler2D secondary_texture : source_color, repeat_enable, filter_linear_mipmap;
+uniform vec4 secondary_texture_color : source_color = vec4(1.0);
 uniform float secondary_uv_scale = 1.0;
 uniform vec3 secondary_uv_offset;
 uniform bool secondary_uv_triplanar = false;
@@ -133,6 +136,8 @@ void fragment() {
 		main_albedo = texture(main_texture, UV * vec2(main_uv_scale));
 		m_normal = texture(main_normal, UV * vec2(main_uv_scale));
 	}
+	
+	main_albedo *= main_texture_color;
 
 	vec4 secondary_albedo;
 	
@@ -143,6 +148,8 @@ void fragment() {
 		secondary_albedo = texture(secondary_texture, UV * vec2(secondary_uv_scale));
 		s_normal = texture(secondary_normal, UV * vec2(secondary_uv_scale));
 	}
+	
+	secondary_albedo *= secondary_texture_color;
 	
 	vec4 blend_noise_texture = texture(blend_noise, UV);
 	vec3 blended_albedo = mix(vec3(main_albedo.xyz), vec3(secondary_albedo.xyz), vec3(blend_noise_texture.xyz));
