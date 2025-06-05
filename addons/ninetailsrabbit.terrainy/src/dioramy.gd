@@ -57,7 +57,8 @@ func generate_diorama() -> void:
 		surface.begin(Mesh.PRIMITIVE_TRIANGLES)
 		surface.create_from(array_mesh, 0)
 		surface.generate_normals()
-		
+		surface.generate_tangents()
+
 		diorama_mesh.mesh = surface.commit()
 		
 		if diorama_layer.generate_collisions:

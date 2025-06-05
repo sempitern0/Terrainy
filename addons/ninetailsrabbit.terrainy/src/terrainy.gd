@@ -3,10 +3,16 @@ class_name Terrainy extends Node
 
 signal terrain_generation_finished
 
+enum CollisionType {
+	None,
+	Trimesh,
+	ConcavePolygon
+}
+
 @export var button_Generate_Terrain: String
 @export_category("Terrain")
 ## When enabled, the trimesh collision is generated for the terrain
-@export var generate_collisions: bool = true
+@export var collision_type: CollisionType = CollisionType.Trimesh
 ## More resolution means more detail (more dense vertex) in the terrain generation, this increases the mesh subdivisions it could reduce the performance in low-spec pcs
 @export_range(2, 2048, 2) var mesh_resolution: int = 64
 ## The depth size of the mesh (z) in godot units (meters)
@@ -177,6 +183,7 @@ func create_surface(mesh_instance: MeshInstance3D) -> void:
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
 	surface.create_from(array_mesh, 0)
 	surface.generate_normals()
+	surface.generate_tangents()
 	
 	pending_terrain_surfaces.append(surface)
 	
@@ -259,6 +266,26 @@ func set_terrain_size_on_plane_mesh(plane_mesh: PlaneMesh) -> void:
 	plane_mesh.material = terrain_material
 
 
+func generate_collisions(terrain_mesh: MeshInstance3D) -> void:
+	if collision_type == CollisionType.Trimesh:
+		terrain_mesh.create_trimesh_collision()
+	elif collision_type == CollisionType.ConcavePolygon:
+		var static_body: StaticBody3D = StaticBody3D.new()
+		static_body.name = "TerrainStaticBody"
+		
+		var collision_shape: CollisionShape3D = CollisionShape3D.new()
+		collision_shape.name = "TerrainCollisionShape"
+		
+		var concave_shape: ConcavePolygonShape3D = ConcavePolygonShape3D.new()
+		concave_shape.set_faces(terrain_mesh.mesh.get_faces())
+		
+		collision_shape.shape = concave_shape
+		
+		static_body.add_child(collision_shape)
+		terrain_mesh.call_thread_safe("add_child", static_body)
+		call_thread_safe("_set_owner_to_edited_scene_root", static_body)
+		call_thread_safe("_set_owner_to_edited_scene_root", collision_shape)
+
 #region Helpers
 func _set_owner_to_edited_scene_root(node: Node) -> void:
 	if Engine.is_editor_hint():
@@ -289,9 +316,8 @@ func on_terrain_generation_finished() -> void:
 		var terrain_mesh: MeshInstance3D = terrain_meshes[i]
 		terrain_mesh.mesh = pending_terrain_surfaces[i].commit() 
 	
-		if generate_collisions:
-			terrain_mesh.create_trimesh_collision()
-			
+		generate_collisions(terrain_mesh)
+		
 		terrain_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		terrain_mesh.add_to_group(nav_source_group_name)
 	

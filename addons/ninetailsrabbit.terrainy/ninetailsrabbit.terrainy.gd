@@ -5,7 +5,7 @@ var inspector_plugin
 
 
 func _enter_tree() -> void:
-	inspector_plugin = preload("src/inspector/inspector_button_plugin.gd").new()
+	inspector_plugin = preload("res://addons/ninetailsrabbit.terrainy/settings/inspector/inspector_button_plugin.gd").new()
 	add_inspector_plugin(inspector_plugin)
 	
 	add_custom_type("Terrainy", "Node", preload("src/terrainy.gd"), preload("assets/terrainy.svg"))
