@@ -22,6 +22,7 @@ class_name ChunkRenderer extends Node
 @export var vertices_x: int = 33
 @export var vertices_z: int = 33
 @export var overall_world_scale: float = 10.0
+@export var randomize_seed: bool = false
 
 var update_timer: Timer
 
@@ -41,6 +42,7 @@ var chunk_mutex: Mutex
 var exit_thread: bool = false
 var chunk_semaphore: Semaphore
 var chunks_on_queue: Array[ChunkTerrain] = []
+var _seed: int = 0
 
 
 func _enter_tree() -> void:
@@ -60,6 +62,9 @@ func _ready() -> void:
 	effective_chunk_size_x = chunk_size_x * overall_world_scale
 	effective_chunk_size_z = chunk_size_z * overall_world_scale
 	
+	if randomize_seed:
+		_seed = randi()
+		
 	start()
 
 func start() -> void:
@@ -113,6 +118,13 @@ func update_pending_chunks() -> void:
 		for coord: Vector2i in required:
 			if not active_chunks.has(coord) and not pending_chunks.has(coord):
 				var chunk: ChunkTerrain = chunk_scene.instantiate() as ChunkTerrain
+				
+				if randomize_seed:
+					chunk.noise_continent.seed = _seed
+					chunk.noise_mountain.seed = _seed
+					chunk.noise_valley.seed = _seed
+					chunk.noise_erosion.seed = _seed
+					
 				pending_chunks[coord] = chunk
 
 

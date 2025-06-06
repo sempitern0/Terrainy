@@ -49,9 +49,7 @@ func set_size(_chunk_size_x: int, _chunk_size_z: int, _vertices_x: int, _vertice
 func generate(coords: Vector2i = origin_coords, word_scale: float = 10.0) -> void:
 	if not generated:
 		generated = true
-		#global_position.x = coords.x * chunk_size_x * word_scale
-		#global_position.z = coords.y * chunk_size_z * word_scale
-		
+
 		var chunk_mesh_instance: MeshInstance3D = MeshInstance3D.new()
 		chunk_mesh_instance.name = "ChunkTerrain[%d]_[%d]" % [coords.x, coords.y]
 		
