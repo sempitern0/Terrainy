@@ -4,14 +4,12 @@ class_name ChunkTerrain extends Node3D
 
 @export_category("Base continent")
 @export var noise_continent: FastNoiseLite
-@export var continent_randomize_seed: bool = true
 @export var continent_slope_scale: float = 8.0
 @export var continent_min_height: float = -10.0
 @export var continent_max_height: float = 25.0
 
 @export_category("Mountain Control")
 @export var noise_mountain: FastNoiseLite
-@export var mountain_randomize_seed: bool = true
 
 @export var mountain_scale: float = 40.0
 @export var mountain_start_height: float = 10.0
@@ -19,13 +17,11 @@ class_name ChunkTerrain extends Node3D
 
 @export_category("Valley Control")
 @export var noise_valley: FastNoiseLite
-@export var valley_randomize_seed: bool = true
 @export var valley_carve_scale: float = 15.0
 @export var valley_apply_threshold: float = 5.0
 
 @export_category("Erosion Control")
 @export var noise_erosion: FastNoiseLite
-@export var erosion_randomize_seed: bool = true
 @export var erosion_scale: float = 2.5
 
 
