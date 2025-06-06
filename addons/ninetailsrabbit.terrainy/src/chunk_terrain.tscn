@@ -1,0 +1,48 @@
+[gd_scene load_steps=6 format=3 uid="uid://k2hofnwrdr0w"]
+
+[ext_resource type="Script" uid="uid://phr5cp8lo544" path="res://addons/ninetailsrabbit.terrainy/src/chunk_terrain.gd" id="1_vsufk"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_vsufk"]
+noise_type = 0
+frequency = 0.007
+domain_warp_amplitude = 8.0
+domain_warp_frequency = 0.04
+domain_warp_fractal_octaves = 3
+domain_warp_fractal_lacunarity = 2.0
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_pfbb6"]
+noise_type = 3
+frequency = 0.035
+fractal_type = 2
+fractal_gain = 0.7
+domain_warp_amplitude = 20.0
+domain_warp_frequency = 0.09
+domain_warp_fractal_octaves = 4
+domain_warp_fractal_lacunarity = 2.0
+domain_warp_fractal_gain = 0.6
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_f02ur"]
+noise_type = 2
+frequency = 0.02
+fractal_type = 0
+domain_warp_amplitude = 15.0
+domain_warp_frequency = 0.07
+domain_warp_fractal_octaves = 3
+domain_warp_fractal_lacunarity = 2.0
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_0a32p"]
+noise_type = 0
+frequency = 0.08
+fractal_octaves = 7
+fractal_gain = 0.4
+domain_warp_amplitude = 6.0
+domain_warp_frequency = 0.15
+domain_warp_fractal_octaves = 2
+domain_warp_fractal_lacunarity = 2.0
+
+[node name="ChunkTerrain" type="Node3D"]
+script = ExtResource("1_vsufk")
+noise_continent = SubResource("FastNoiseLite_vsufk")
+noise_mountain = SubResource("FastNoiseLite_pfbb6")
+noise_valley = SubResource("FastNoiseLite_f02ur")
+noise_erosion = SubResource("FastNoiseLite_0a32p")

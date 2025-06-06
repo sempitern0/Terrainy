@@ -3,16 +3,12 @@ class_name Terrainy extends Node
 
 signal terrain_generation_finished
 
-enum CollisionType {
-	None,
-	Trimesh,
-	ConcavePolygon
-}
+
 
 @export var button_Generate_Terrain: String
 @export_category("Terrain")
-## When enabled, the trimesh collision is generated for the terrain
-@export var collision_type: CollisionType = CollisionType.Trimesh
+## Collision type generation for the terrain meshes
+@export var collision_type: TerrainyCore.CollisionType = TerrainyCore.CollisionType.Trimesh
 ## More resolution means more detail (more dense vertex) in the terrain generation, this increases the mesh subdivisions it could reduce the performance in low-spec pcs
 @export_range(2, 2048, 2) var mesh_resolution: int = 64
 ## The depth size of the mesh (z) in godot units (meters)
@@ -267,9 +263,9 @@ func set_terrain_size_on_plane_mesh(plane_mesh: PlaneMesh) -> void:
 
 
 func generate_collisions(terrain_mesh: MeshInstance3D) -> void:
-	if collision_type == CollisionType.Trimesh:
+	if collision_type == TerrainyCore.CollisionType.Trimesh:
 		terrain_mesh.create_trimesh_collision()
-	elif collision_type == CollisionType.ConcavePolygon:
+	elif collision_type == TerrainyCore.CollisionType.ConcavePolygon:
 		var static_body: StaticBody3D = StaticBody3D.new()
 		static_body.name = "TerrainStaticBody"
 		
@@ -281,7 +277,7 @@ func generate_collisions(terrain_mesh: MeshInstance3D) -> void:
 		
 		collision_shape.shape = concave_shape
 		
-		static_body.add_child(collision_shape)
+		static_body.call_thread_safe("add_child", collision_shape)
 		terrain_mesh.call_thread_safe("add_child", static_body)
 		call_thread_safe("_set_owner_to_edited_scene_root", static_body)
 		call_thread_safe("_set_owner_to_edited_scene_root", collision_shape)

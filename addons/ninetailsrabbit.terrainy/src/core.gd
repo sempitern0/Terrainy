@@ -1,5 +1,10 @@
 class_name TerrainyCore
 
+enum CollisionType {
+	None,
+	Trimesh,
+	ConcavePolygon
+}
 
 static func prepare_mesh_for_diorama(mesh_instance: MeshInstance3D, dimensions: Vector3, resolution: float) -> MeshInstance3D:
 	if mesh_instance.mesh == null or not mesh_instance.mesh is BoxMesh:
