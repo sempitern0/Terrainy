@@ -23,6 +23,8 @@ class_name ChunkRenderer extends Node
 @export var vertices_z: int = 33
 @export var overall_world_scale: float = 10.0
 @export var randomize_seed: bool = false
+@export_category("Material")
+@export var terrain_material: Material
 
 var update_timer: Timer
 
@@ -140,6 +142,9 @@ func _thread_queue_chunks() -> void:
 		for coord: Vector2i in pending_chunks:
 			pending_chunks[coord].set_size(chunk_size_x, chunk_size_z, vertices_x, vertices_z)\
 				.generate(coord, overall_world_scale)
+			
+			if terrain_material:
+				pending_chunks[coord].terrain_mesh_instance.set_surface_override_material(0, terrain_material)
 			
 		chunk_mutex.unlock()
 

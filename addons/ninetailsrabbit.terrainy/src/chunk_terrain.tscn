@@ -44,6 +44,8 @@ domain_warp_fractal_lacunarity = 2.0
 [node name="ChunkTerrain" type="Node3D"]
 script = ExtResource("1_vsufk")
 noise_continent = SubResource("FastNoiseLite_vsufk")
+continent_min_height = -5.0
+continent_max_height = 30.0
 noise_mountain = SubResource("FastNoiseLite_pfbb6")
 noise_valley = SubResource("FastNoiseLite_f02ur")
 valley_carve_scale = 20.0

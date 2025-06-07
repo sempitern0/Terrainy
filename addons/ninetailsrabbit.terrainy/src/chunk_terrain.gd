@@ -24,6 +24,11 @@ class_name ChunkTerrain extends Node3D
 @export var noise_erosion: FastNoiseLite
 @export var erosion_scale: float = 2.5
 
+@export_category("Water")
+@export var include_water: bool = true
+@export var water_material: Material
+@export var water_height_level: float = -2.0
+
 
 var chunk_size_x: int = 32
 var chunk_size_z: int = 32
@@ -31,6 +36,8 @@ var vertices_x: int = 33
 var vertices_z: int = 33
 var origin_coords: Vector2i = Vector2i.ZERO
 var generated: bool = false
+
+var terrain_mesh_instance: MeshInstance3D
 
 
 func set_size(_chunk_size_x: int, _chunk_size_z: int, _vertices_x: int, _vertices_z: int) -> ChunkTerrain:
@@ -46,8 +53,8 @@ func generate(coords: Vector2i = origin_coords, word_scale: float = 10.0) -> voi
 	if not generated:
 		generated = true
 
-		var chunk_mesh_instance: MeshInstance3D = MeshInstance3D.new()
-		chunk_mesh_instance.name = "ChunkTerrain[%d]_[%d]" % [coords.x, coords.y]
+		terrain_mesh_instance = MeshInstance3D.new()
+		terrain_mesh_instance.name = "ChunkTerrain[%d]_[%d]" % [coords.x, coords.y]
 		
 		var surface_tool: SurfaceTool = SurfaceTool.new()
 		surface_tool.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -111,11 +118,13 @@ func generate(coords: Vector2i = origin_coords, word_scale: float = 10.0) -> voi
 		surface_tool.generate_normals()
 		surface_tool.generate_tangents()
 		
-		chunk_mesh_instance.mesh = surface_tool.commit()
-		generate_collisions(chunk_mesh_instance)
-		call_thread_safe("add_child", chunk_mesh_instance)
+		terrain_mesh_instance.mesh = surface_tool.commit()
+		generate_collisions(terrain_mesh_instance)
+		call_thread_safe("add_child", terrain_mesh_instance)
 		
-		chunk_mesh_instance.scale = Vector3.ONE * word_scale
+		terrain_mesh_instance.scale = Vector3.ONE * word_scale
+		
+		generate_water(terrain_mesh_instance)
 
 
 func generate_collisions(terrain_mesh: MeshInstance3D) -> void:
@@ -135,3 +144,19 @@ func generate_collisions(terrain_mesh: MeshInstance3D) -> void:
 		
 		static_body.call_thread_safe("add_child", collision_shape)
 		terrain_mesh.call_thread_safe("add_child", static_body)
+		
+		
+func generate_water(terrain_mesh: MeshInstance3D) -> void:
+	if include_water and water_material:
+		var water_plane: MeshInstance3D = MeshInstance3D.new()
+		water_plane.name = "Water"
+		
+		var water_mesh = PlaneMesh.new()
+		water_mesh.size = Vector2(chunk_size_x, chunk_size_z)
+		
+		water_plane.mesh = water_mesh
+		water_plane.position = Vector3(chunk_size_x / 2.0, water_height_level, chunk_size_z / 2.0)
+		
+		water_plane.set_surface_override_material(0, water_material)
+		
+		terrain_mesh.call_thread_safe("add_child", water_plane)
