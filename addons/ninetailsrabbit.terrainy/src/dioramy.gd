@@ -8,8 +8,21 @@ class_name Dioramy extends Node3D
 
 
 func generate_diorama() -> void:
-	_free_children(self)
+	var root_node: Node3D = Node3D.new()
+	root_node.name = "DioramaRoot%d" % output_node.get_child_count()
+	output_node.add_child(root_node)
+	_set_owner_to_edited_scene_root(root_node)
 	
+	for layer in generate_diorama_layers():
+		root_node.add_child(layer)
+		_set_owner_to_edited_scene_root(layer)
+
+
+func generate_diorama_layers() -> Array[MeshInstance3D]:
+	if layers.is_empty():
+		return []
+	
+	var layers_created: Array[MeshInstance3D] = []
 	var last_diorama_height: float = 0.0
 	var layer: int = 0
 	
@@ -17,7 +30,6 @@ func generate_diorama() -> void:
 		layer += 1
 		
 		var diorama_mesh: MeshInstance3D  = _create_layer_mesh(layer, diorama_layer)
-		
 		var surface = SurfaceTool.new()
 		var mesh_data_tool = MeshDataTool.new()
 		
@@ -63,22 +75,23 @@ func generate_diorama() -> void:
 		
 		if diorama_layer.generate_collisions:
 			diorama_mesh.create_trimesh_collision()
-			
+		
 		diorama_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		
 		if layer > 1:
 			diorama_mesh.position.y = Vector3.DOWN.y * (last_diorama_height / 2.0 + diorama_layer.dimensions.y / 2.0)
 			
 		last_diorama_height = diorama_layer.dimensions.y
-	
+		
+		layers_created.append(diorama_mesh)
+		
+	return layers_created
+
 
 func _create_layer_mesh(layer: int, diorama_layer: DioramaLayer):
 	var diorama_mesh: MeshInstance3D  = MeshInstance3D.new()
 	diorama_mesh = TerrainyCore.prepare_mesh_for_diorama(diorama_mesh, diorama_layer.dimensions, diorama_layer.mesh_resolution)
 	diorama_mesh.name = "DioramaLayer%d" % layer
-	
-	output_node.add_child(diorama_mesh)
-	_set_owner_to_edited_scene_root(diorama_mesh)
 	
 	return diorama_mesh
 
