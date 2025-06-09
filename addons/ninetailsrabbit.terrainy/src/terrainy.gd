@@ -118,8 +118,8 @@ func process_terrain_generation(index: int) -> void:
 	
 
 func generate_terrain(selected_mesh: MeshInstance3D) -> void:
-	if selected_mesh == null:
-		push_warning("Terrainy: This node needs a selected_mesh to create the terrain, aborting generation...")
+	if selected_mesh == null or not is_instance_valid(selected_mesh):
+		push_warning("Terrainy: This node needs a valid MeshInstance3D to create the terrain, aborting generation...")
 		return
 	
 	if noise == null and noise_texture == null:
@@ -219,12 +219,8 @@ func generate_heightmap_with_noise_texture(selected_texture: CompressedTexture2D
 		var x = vertex.x if vertex.x > 0 else width - absf(vertex.x)
 		var z = vertex.z if vertex.z > 0 else height - absf(vertex.z)
 		
-		vertex.y = noise_image.get_pixel(x, z).r
-		vertex.y = call_thread_safe("apply_elevation_curve", vertex.y)
-		
-		var falloff = call_thread_safe("calculate_falloff", vertex)
-		
-		vertex.y *= max_terrain_height * falloff
+		vertex.y = apply_elevation_curve(noise_image.get_pixel(x, z).r)
+		vertex.y *= max_terrain_height * calculate_falloff(vertex)
 		
 		mesh_data_tool.set_vertex(vertex_idx, vertex)
 
@@ -251,7 +247,7 @@ func calculate_falloff(vertex: Vector3) -> float:
 func apply_elevation_curve(noise_y: float) -> float:
 	if elevation_curve:
 		noise_y = elevation_curve.sample(noise_y)
-		
+	
 	return noise_y
 
 
