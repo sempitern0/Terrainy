@@ -3,8 +3,6 @@ class_name Terrainy extends Node
 
 signal terrain_generation_finished
 
-
-
 @export var button_Generate_Terrain: String
 @export_category("Terrain")
 ## Collision type generation for the terrain meshes
@@ -53,7 +51,7 @@ signal terrain_generation_finished
 			update_configuration_warnings()
 @export var elevation_curve: Curve
 ## Use an image to smooth the edges on this terrain. Useful if you want to connect other plots of land
-@export var falloff_texture: CompressedTexture2D = preload("res://addons/ninetailsrabbit.terrainy/assets/falloff_images/TerrainFalloff.png"):
+@export var falloff_texture: CompressedTexture2D:
 	set(new_texture):
 		if new_texture != falloff_texture:
 			falloff_texture = new_texture
