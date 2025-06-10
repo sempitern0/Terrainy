@@ -20,7 +20,7 @@ class_name TerrainConfiguration extends Resource
 		if value != size_width:
 			size_width = max(1, value)
 			
-## The maximum height this terrain can have
+## The maximum height of this terrain
 @export var max_terrain_height: float = 50.0:
 	set(value):
 		if value != max_terrain_height:
