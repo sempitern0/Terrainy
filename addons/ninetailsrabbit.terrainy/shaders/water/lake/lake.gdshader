@@ -7,8 +7,11 @@ uniform sampler2D SCREEN_TEXTURE: hint_screen_texture, filter_nearest, repeat_di
 
 group_uniforms Surface_details;
 uniform float uv_scale = 1.0;
-uniform float roughness: hint_range(0.0, 1.0, 0.1) = 0.2;
 uniform float metallic : hint_range(0.0, 1.0, 0.01) = 0.0;
+uniform float roughness: hint_range(0.0, 1.0, 0.1) = 0.2;
+uniform float shallow_roughness_boost: hint_range(0.0, 1.0, 0.01) = 0.0;
+uniform float shallow_roughness_depth_start: hint_range(0.0, 5.0, 0.1) = 0.0;
+uniform float shallow_roughness_depth_end: hint_range(0.0, 10.0, 0.1) = 0.0;
 
 group_uniforms Water_Deep;
 uniform vec4 base_color: source_color;
@@ -19,6 +22,7 @@ uniform float water_transparency: hint_range(0.0, 1.0, 0.01) = 0.05;
 
 group_uniforms Refraction;
 uniform float refraction_strength: hint_range(0.0, 8.0, 0.001) = 0.12;
+uniform float underwater_fresnel_power: hint_range(0.0, 10.0, 0.1) = 0.5; 
 
 group_uniforms Edge_Detection;
 uniform bool use_edge_foam = true;
@@ -42,7 +46,7 @@ uniform vec2 wave_direction = vec2(0.1, 0.1);
 uniform float wave_strength = 0.05;
 uniform float time_factor = 4.0;
 uniform float noise_zoom = 2.0;
-uniform float noise_amp = 1.0;
+uniform float noise_amplitude = 0.0;
 // Each wave is defined by a vec4: direction (x,y), amplitude, frequency
 uniform vec4 wave_1 = vec4(0.3, 4.0, 0.2, 0.6);
 uniform vec4 wave_2 = vec4(-0.26, -0.19, 0.01, 0.47);
@@ -116,7 +120,7 @@ struct WaveResult {
 WaveResult gerstner_wave(vec4 params, vec2 pos, float time) {
     float steepness = params.z * dynamic_amplitude(pos, time);
     float wavelength = params.w;
-    float k = 2.0 * PI / wavelength;
+    float k = TAU / wavelength;
     float c = sqrt(9.81 / k);
     vec2 d = normalize(params.xy);
     float f = k * (dot(d, pos.xy) - c * time);
@@ -188,7 +192,7 @@ WaveResult wave(vec2 pos, float time) {
     waveResult.normal += wr.normal;
 
     // Add noise to the wave displacement for more natural look
-    waveResult.displacement.y += fbm(pos.xy * (noise_zoom / 50.0)) * noise_amp;
+    waveResult.displacement.y += fbm(pos.xy * (noise_zoom / 50.0)) * noise_amplitude;
 
     return waveResult;
 }
@@ -213,6 +217,7 @@ void vertex() {
 	tbn_matrix = mat3(t, b, n);
 
 }
+
 
 void fragment() {
 	float basic_fresnel = fresnel(3.0, NORMAL, VIEW);
@@ -266,15 +271,34 @@ void fragment() {
     float edge_fade = smoothstep(edge_fade_start, edge_fade_end, z_dif);
     vec3 depth_color_adj = mix(texture(edge_foam_texture, edge_uv).rgb * edge_foam_intensity, final_color, edge_fade);
 	
+	float current_depth_diff = clamp((vertex_y - depth_texture_y), 0.0, 100.0);
+	float shallow_blend = smoothstep(shallow_roughness_depth_start, shallow_roughness_depth_end, current_depth_diff);
+	float final_roughness = mix(roughness + shallow_roughness_boost, roughness, shallow_blend);
+
+	vec3 camera_world_position = CAMERA_POSITION_WORLD;
+	float water_level_y = world_position.y; 
+	bool is_camera_underwater = camera_world_position.y < water_level_y;
+	
+	if (is_camera_underwater) {
+		float current_fragment_world_depth_from_camera = length(CAMERA_POSITION_WORLD.xyz - world_position);
+	 	float absorption_blend = clamp(current_fragment_world_depth_from_camera / depth_distance, 0.0, 1.0);
+       
+		 absorption_blend = exp(-absorption_blend * beers_law);
+		 float underwater_fresnel_effect = fresnel(underwater_fresnel_power, normalmap, VIEW); // Using the world-space normal and custom power
+		
+		 final_color = mix(deep_color.rgb * absorption_blend, refraction_texture, water_transparency + underwater_fresnel_effect);
+	}
+	
 	if (use_edge_foam) {
-		ALBEDO =  final_color + depth_color_adj; // mix(final_color, screen, depth_blend * (1.0 - basic_fresnel)); 
+		float foam_alpha = clamp(depth_color_adj.r * (1.0 - edge_fade), 0.0, 1.0);
+		ALBEDO = mix(final_color, depth_color_adj, foam_alpha);
 	} else {
 		ALBEDO =  final_color;
 	}
-
+	
 	ALPHA = base_color.a;
 	NORMAL *= normal_strength;
 	NORMAL_MAP = normalmap;
-	ROUGHNESS = roughness * (1.0 - basic_fresnel);
 	METALLIC = metallic;
+	ROUGHNESS = final_roughness * (1.0 - basic_fresnel);
 }
