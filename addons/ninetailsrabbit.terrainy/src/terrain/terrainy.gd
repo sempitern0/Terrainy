@@ -130,10 +130,6 @@ func generate_heightmap_with_noise(configuration: TerrainConfiguration, mesh_dat
 		
 		mesh_data_tool.set_vertex(vertex_idx, vertex)
 
-
-func get_noise_y(selected_noise: FastNoiseLite, vertex: Vector3) -> float:
-	return (selected_noise.get_noise_2d(vertex.x, vertex.z) + 1) / 2
-	
 	
 func generate_heightmap_with_noise_texture(configuration: TerrainConfiguration, mesh_data_tool: MeshDataTool) -> void:
 	var noise_image: Image = configuration.noise_texture.get_image()

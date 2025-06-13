@@ -25,3 +25,19 @@ static func get_noise_y(selected_noise: FastNoiseLite, vertex: Vector3) -> float
 ## It normalizes the noise value from [-1.0, 1.0] to [0.0, 1.0]
 static func get_noise_y_normalized(selected_noise: FastNoiseLite, vertex: Vector3) -> float:
 	return (selected_noise.get_noise_2d(vertex.x, vertex.z) + 1) / 2
+
+
+static func set_owner_to_edited_scene_root(node: Node) -> void:
+	if Engine.is_editor_hint():
+		node.owner = node.get_tree().edited_scene_root
+
+
+static func free_children(node: Node) -> void:
+	if node.get_child_count() == 0:
+		return
+
+	var childrens = node.get_children()
+	childrens.reverse()
+	
+	for child in childrens.filter(func(_node: Node): return is_instance_valid(node)):
+		child.free()

@@ -11,11 +11,11 @@ func generate_diorama() -> void:
 	var root_node: Node3D = Node3D.new()
 	root_node.name = "DioramaRoot%d" % output_node.get_child_count()
 	output_node.add_child(root_node)
-	_set_owner_to_edited_scene_root(root_node)
+	TerrainyCore.set_owner_to_edited_scene_root(root_node)
 	
 	for layer in generate_diorama_layers():
 		root_node.add_child(layer)
-		_set_owner_to_edited_scene_root(layer)
+		TerrainyCore.set_owner_to_edited_scene_root(layer)
 
 
 func generate_diorama_layers() -> Array[MeshInstance3D]:
@@ -100,19 +100,3 @@ func _on_tool_button_pressed(text: String) -> void:
 	match text:
 		"Generate Diorama":
 			generate_diorama()
-			
-			
-func _free_children(node: Node) -> void:
-	if node.get_child_count() == 0:
-		return
-
-	var childrens = node.get_children()
-	childrens.reverse()
-	
-	for child in childrens.filter(func(_node: Node): return is_instance_valid(node) and not node is Dioramy):
-		child.free()
-
-
-func _set_owner_to_edited_scene_root(node: Node) -> void:
-	if Engine.is_editor_hint():
-		node.owner = get_tree().edited_scene_root
