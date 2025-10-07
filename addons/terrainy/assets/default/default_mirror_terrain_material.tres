@@ -4,6 +4,7 @@
 
 [resource]
 cull_mode = 2
+albedo_color = Color(0.711015, 0.45525277, 0.2963863, 1)
 albedo_texture = ExtResource("1_uvhmn")
 uv1_scale = Vector3(0.5, 0.5, 0.5)
 uv1_triplanar = true

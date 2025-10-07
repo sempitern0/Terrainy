@@ -208,14 +208,7 @@ static func create_mirrored_terrain(terrain_mesh: MeshInstance3D, configuration:
 		configuration.mirror_material.cull_mode = BaseMaterial3D.CULL_DISABLED
 		mirror_instance.set_surface_override_material(0, configuration.mirror_material)
 	else:
-		var terrain_material: Material = terrain_mesh.get_active_material(0)
-		
-		if terrain_material and terrain_material is BaseMaterial3D:
-			var duplicated_terrain_material: BaseMaterial3D = terrain_material.duplicate()
-			duplicated_terrain_material.cull_mode = BaseMaterial3D.CULL_DISABLED
-			mirror_instance.set_surface_override_material(0, duplicated_terrain_material)
-		else:
-			mirror_instance.set_surface_override_material(0, TerrainyCore.DefaultMirrorTerrainMaterial)
+		mirror_instance.set_surface_override_material(0, TerrainyCore.DefaultMirrorTerrainMaterial)
 	
 	return mirror_instance
 

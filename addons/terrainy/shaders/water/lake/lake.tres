@@ -13,10 +13,10 @@ fractal_gain = 0.47
 [sub_resource type="NoiseTexture2D" id="NoiseTexture2D_vbegm"]
 width = 1024
 height = 1024
+noise = SubResource("FastNoiseLite_g14j6")
+color_ramp = SubResource("Gradient_ykrsh")
 seamless = true
 as_normal_map = true
-color_ramp = SubResource("Gradient_ykrsh")
-noise = SubResource("FastNoiseLite_g14j6")
 
 [sub_resource type="Gradient" id="Gradient_ehkex"]
 
@@ -28,10 +28,10 @@ fractal_gain = 0.47
 [sub_resource type="NoiseTexture2D" id="NoiseTexture2D_00tp4"]
 width = 1024
 height = 1024
+noise = SubResource("FastNoiseLite_xersf")
+color_ramp = SubResource("Gradient_ehkex")
 seamless = true
 as_normal_map = true
-color_ramp = SubResource("Gradient_ehkex")
-noise = SubResource("FastNoiseLite_xersf")
 
 [resource]
 render_priority = 0
