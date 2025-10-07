@@ -58,7 +58,7 @@ func generate_terrain(selected_mesh: MeshInstance3D) -> void:
 	selected_mesh.set_deferred_thread_group("mesh", plane_mesh)
 
 	call_thread_safe("create_surface", selected_mesh)
-
+	
 
 func create_navigation_region(selected_navigation_region: NavigationRegion3D = navigation_region) -> void:
 	if selected_navigation_region == null and create_navigation_region_in_runtime:
@@ -121,7 +121,15 @@ func generate_heightmap_with_noise(configuration: TerrainConfiguration, mesh_dat
 		noise_y = apply_elevation_curve (configuration, noise_y)
 		var falloff = calculate_falloff(configuration, vertex)
 		
-		vertex.y = noise_y * configuration.max_terrain_height * falloff
+		if configuration.radial_shape:
+			var radius_x: float = configuration.size_width * 0.5
+			var radius_z: float = configuration.size_depth * 0.5
+			var dist: float = Vector2(vertex.x / radius_x, vertex.z / radius_z).length()
+			# falloff radial 0..1, 1 centro, 0 borde
+			var radial_mask: float = clampf(1.0 - pow(dist, configuration.radial_falloff_power), 0.0, 1.0)
+			vertex.y = noise_y * configuration.max_terrain_height * falloff * radial_mask
+		else:
+			vertex.y = noise_y * configuration.max_terrain_height * falloff
 		
 		mesh_data_tool.set_vertex(vertex_idx, vertex)
 

@@ -28,6 +28,9 @@ class_name TerrainConfiguration extends Resource
 ## The terrain material that will be applied on the surface
 @export var terrain_material: Material
 @export_group("Heightmap")
+## Generate the terrain around a circular shape to avoid cubic results
+@export var radial_shape: bool = false
+@export_range(0.5, 4.0, 0.1) var radial_falloff_power: float = 2.0
 ## It only applies when FastNoiseLite is used to generate the terrain
 @export var randomize_noise_seed: bool = false
 ## Noise values are perfect to generate a variety of surfaces, higher frequencies tend to generate more mountainous terrain.

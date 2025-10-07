@@ -1,6 +1,6 @@
 [gd_resource type="FastNoiseLite" format=3 uid="uid://dib1h5kgj3fru"]
 
 [resource]
-seed = 77
+seed = 935122
 fractal_octaves = 3
 fractal_lacunarity = 2.5
