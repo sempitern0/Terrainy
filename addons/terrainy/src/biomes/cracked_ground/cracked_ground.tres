@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="TerrainConfiguration" load_steps=4 format=3 uid="uid://dcwmhpxkosnh8"]
+
+[ext_resource type="Script" uid="uid://ce4bgela2op7d" path="res://addons/terrainy/src/terrain/terrain_configuration.gd" id="1_2nw8g"]
+[ext_resource type="Curve" uid="uid://76iby1hwgj2f" path="res://scenes/world/biomes/cracked_ground/cracked_ground_curve.tres" id="1_sbxi6"]
+[ext_resource type="FastNoiseLite" uid="uid://dut53obx03kss" path="res://scenes/world/biomes/cracked_ground/cracked_ground_noise.tres" id="2_0h14i"]
+
+[resource]
+script = ExtResource("1_2nw8g")
+randomize_noise_seed = true
+noise = ExtResource("2_0h14i")
+elevation_curve = ExtResource("1_sbxi6")
+generate_mirror = true
+mirror_depth = 5.0
+metadata/_custom_type_script = "uid://ce4bgela2op7d"

@@ -69,8 +69,14 @@ static func create_mirrored_terrain(terrain_mesh: MeshInstance3D, configuration:
 				var scale: float = configuration.mirror_vertex_scale
 				var max_amp: float = configuration.mirror_max_vertex_amplitude
 				var amplitude: float = minf(depth * 0.25, max_amp)
-				n_offset = sin(v.x * scale + v.z * scale) * cos(v.x * scale * 0.5 + v.z * scale * 0.5) * amplitude
-
+				var base_noise: float = sin(v.x * scale + v.z * scale) * cos(v.x * scale * 0.5 + v.z * scale * 0.5)
+				n_offset = -absf(base_noise) * amplitude * 0.8
+				n_offset = clampf(n_offset, -depth * 0.9, -0.1)
+				
+				var top_y: float = top[i].y
+				var mirror_depth: float = absf(n_offset) + 0.5
+				v.y = top_y - mirror_depth 
+				
 				var prev: Vector3 = top[max(i - 1, 0)]
 				var next: Vector3 = top[min(i + 1, top.size() - 1)]
 				var neighbor_offsets: Array[Vector3] = [prev, next]
