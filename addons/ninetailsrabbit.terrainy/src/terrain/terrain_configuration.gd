@@ -25,10 +25,21 @@ class_name TerrainConfiguration extends Resource
 	set(value):
 		if value != max_terrain_height:
 			max_terrain_height = maxf(0.5, value)
-
 ## The terrain material that will be applied on the surface
 @export var terrain_material: Material
-@export_category("Heightmap")
+@export_group("Mirror")
+## Generate a mirrored terrain on the bottom
+@export var generate_mirror: bool = false
+## The mirror offset allows to avoid shadow artifacts when 2 meshes are glue together. 
+@export_range(0.01, 100.0, 0.01) var mirror_offset: float = 0.01
+## The height to the bottom of the mirror mesh.
+@export var mirror_depth: float = 25.0
+@export var mirror_vertex_scale: float = 0.15
+@export var mirror_max_vertex_amplitude: float = 15.0
+## Useful if you want to create a variant for the bottom part for a more organic result.
+@export var mirror_noise: FastNoiseLite
+@export var mirror_material: Material
+@export_group("Heightmap")
 ## It only applies when FastNoiseLite is used to generate the terrain
 @export var randomize_noise_seed: bool = false
 ## Noise values are perfect to generate a variety of surfaces, higher frequencies tend to generate more mountainous terrain.

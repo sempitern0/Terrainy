@@ -9,7 +9,6 @@ func _enter_tree() -> void:
 	add_inspector_plugin(inspector_plugin)
 	
 	add_custom_type("Terrainy", "Node", preload("src/terrain/terrainy.gd"), preload("assets/terrainy.svg"))
-	add_custom_type("Dioramy", "Node3D", preload("src/diorama/dioramy.gd"), preload("assets/dioramy.svg"))
 	add_custom_type("ChunkRenderer", "Node", preload("src/chunk/chunk_renderer.gd"), preload("assets/chunk_renderer.svg"))
 	add_custom_type("ChunkTerrain", "Node3D", preload("src/chunk/chunk_terrain.gd"), preload("assets/chunk_terrain.svg"))
 
@@ -17,7 +16,6 @@ func _enter_tree() -> void:
 func _exit_tree() -> void:
 	remove_custom_type("ChunkTerrain")
 	remove_custom_type("ChunkRenderer")
-	remove_custom_type("Dioramy")
 	remove_custom_type("Terrainy")
 	
 	remove_inspector_plugin(inspector_plugin)

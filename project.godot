@@ -17,7 +17,7 @@ config/ninetailsrabbit.terrainy/update_notification_enabled=true
 config/name="Terrainy"
 config/description="Quickly create natural-looking terrain with customizable noise parameters. This tool is designed to create simple terrains that do not require manual painting."
 config/version="1.1.6"
-config/features=PackedStringArray("4.4", "GL Compatibility")
+config/features=PackedStringArray("4.5", "GL Compatibility")
 config/icon="res://icon.svg"
 
 [editor_plugins]

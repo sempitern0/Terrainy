@@ -18,11 +18,6 @@ var thread: Thread
 var pending_terrain_surfaces: Array[SurfaceTool] = []
 
 
-func _ready() -> void:
-	if not Engine.is_editor_hint():
-		generate_terrains()
-		
-
 func generate_terrains() -> void:
 	if terrain_meshes.is_empty():
 		push_warning("Terrainy: This node needs at least one mesh to create the terrain, aborting generation...")
@@ -241,7 +236,14 @@ func on_terrain_generation_finished() -> void:
 		
 		terrain_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		terrain_mesh.add_to_group(nav_source_group_name)
-	
+		
+		if terrain_meshes[terrain_mesh].generate_mirror:
+			var mirror_instance: MeshInstance3D = TerrainyCore.create_mirrored_terrain(terrain_mesh, terrain_meshes[terrain_mesh])
+			
+			if mirror_instance:
+				terrain_mesh.call_thread_safe("add_child", mirror_instance)
+				call_thread_safe("_set_owner_to_edited_scene_root", mirror_instance)
+				
 	create_navigation_region(navigation_region)
-	
+
 #endregion
