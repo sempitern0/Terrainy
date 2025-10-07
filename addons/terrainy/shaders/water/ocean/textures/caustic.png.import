@@ -1,0 +1,29 @@
+[remap]
+
+importer="2d_array_texture"
+type="CompressedTexture2DArray"
+uid="uid://dcvujep4v7k1b"
+path.s3tc="res://.godot/imported/caustic.png-2f5f764013c3e1f9e4d66d517c58fce2.s3tc.ctexarray"
+metadata={
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
+}
+
+[deps]
+
+source_file="res://addons/terrainy/shaders/water/ocean/textures/caustic.png"
+dest_files=["res://.godot/imported/caustic.png-2f5f764013c3e1f9e4d66d517c58fce2.s3tc.ctexarray"]
+
+[params]
+
+compress/mode=2
+compress/high_quality=false
+compress/lossy_quality=0.7
+compress/uastc_level=0
+compress/rdo_quality_loss=0.0
+compress/hdr_compression=1
+compress/channel_pack=0
+mipmaps/generate=true
+mipmaps/limit=-1
+slices/horizontal=4
+slices/vertical=4

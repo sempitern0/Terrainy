@@ -1,0 +1,59 @@
+[gd_scene load_steps=14 format=3 uid="uid://k2hofnwrdr0w"]
+
+[ext_resource type="Script" uid="uid://phr5cp8lo544" path="res://addons/terrainy/src/chunk/chunk_terrain.gd" id="1_vsufk"]
+[ext_resource type="Script" uid="uid://bgp8dosd5n5h7" path="res://addons/terrainy/src/chunk/configuration/chunk_continent.gd" id="2_6h54f"]
+[ext_resource type="Script" uid="uid://c00vkm8iyiuwn" path="res://addons/terrainy/src/chunk/configuration/chunk_mountain.gd" id="3_s6x86"]
+[ext_resource type="Script" uid="uid://ckn5d65dg2ls0" path="res://addons/terrainy/src/chunk/configuration/chunk_valley.gd" id="4_eltg2"]
+[ext_resource type="Script" uid="uid://c517kxprjxp8n" path="res://addons/terrainy/src/chunk/configuration/chunk_erosion.gd" id="5_xrd18"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_b835d"]
+noise_type = 4
+frequency = 0.0054
+
+[sub_resource type="Resource" id="Resource_3as5s"]
+script = ExtResource("2_6h54f")
+slope_scale = 8.0
+min_height = -10.0
+max_height = 25.0
+noise = SubResource("FastNoiseLite_b835d")
+metadata/_custom_type_script = "uid://bgp8dosd5n5h7"
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_cj5jt"]
+noise_type = 0
+frequency = 0.0132
+
+[sub_resource type="Resource" id="Resource_mkg1h"]
+script = ExtResource("3_s6x86")
+scale = 40.0
+start_height = 10.0
+fade_height = 10.0
+noise = SubResource("FastNoiseLite_cj5jt")
+metadata/_custom_type_script = "uid://c00vkm8iyiuwn"
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_b8fum"]
+noise_type = 2
+frequency = 0.0151
+
+[sub_resource type="Resource" id="Resource_u0o4g"]
+script = ExtResource("4_eltg2")
+carve_scale = 15.0
+apply_threshold = 5.0
+noise = SubResource("FastNoiseLite_b8fum")
+metadata/_custom_type_script = "uid://ckn5d65dg2ls0"
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_54bmn"]
+noise_type = 3
+frequency = 0.0071
+
+[sub_resource type="Resource" id="Resource_1j8ot"]
+script = ExtResource("5_xrd18")
+erosion_scale = 2.5
+noise = SubResource("FastNoiseLite_54bmn")
+metadata/_custom_type_script = "uid://c517kxprjxp8n"
+
+[node name="ChunkTerrain" type="Node3D"]
+script = ExtResource("1_vsufk")
+continent = SubResource("Resource_3as5s")
+mountain = SubResource("Resource_mkg1h")
+valley = SubResource("Resource_u0o4g")
+erosion = SubResource("Resource_1j8ot")
