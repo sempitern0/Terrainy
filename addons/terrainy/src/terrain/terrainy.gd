@@ -179,8 +179,12 @@ func set_terrain_size_on_plane_mesh(configuration: TerrainConfiguration, plane_m
 	plane_mesh.size = Vector2(configuration.size_width, configuration.size_depth)
 	plane_mesh.subdivide_depth = configuration.mesh_resolution
 	plane_mesh.subdivide_width = configuration.mesh_resolution
-	plane_mesh.material = configuration.terrain_material
-
+	
+	if configuration.terrain_material:
+		plane_mesh.material = configuration.terrain_material
+	else:
+		plane_mesh.material = TerrainyCore.DefaultTerrainMaterial
+	
 
 func generate_collisions(configuration: TerrainConfiguration, terrain_mesh: MeshInstance3D) -> void:
 	if configuration.collision_type == TerrainyCore.CollisionType.Trimesh:

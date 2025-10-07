@@ -1,0 +1,9 @@
+[gd_resource type="StandardMaterial3D" load_steps=2 format=3 uid="uid://8ku0pjn8b0p3"]
+
+[ext_resource type="Texture2D" uid="uid://fo2osrg34rs" path="res://addons/terrainy/assets/default/checker.jpg" id="1_uvhmn"]
+
+[resource]
+cull_mode = 2
+albedo_texture = ExtResource("1_uvhmn")
+uv1_scale = Vector3(0.5, 0.5, 0.5)
+uv1_triplanar = true

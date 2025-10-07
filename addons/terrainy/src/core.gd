@@ -1,5 +1,9 @@
 class_name TerrainyCore
 
+const DefaultTerrainMaterial: StandardMaterial3D = preload("uid://dnlh6yw1dkew1")
+const DefaultMirrorTerrainMaterial: StandardMaterial3D = preload("uid://8ku0pjn8b0p3")
+
+
 enum CollisionType {
 	None,
 	Trimesh,
@@ -211,9 +215,7 @@ static func create_mirrored_terrain(terrain_mesh: MeshInstance3D, configuration:
 			duplicated_terrain_material.cull_mode = BaseMaterial3D.CULL_DISABLED
 			mirror_instance.set_surface_override_material(0, duplicated_terrain_material)
 		else:
-			var default_material: StandardMaterial3D = StandardMaterial3D.new()
-			default_material.cull_mode = BaseMaterial3D.CULL_DISABLED
-			mirror_instance.set_surface_override_material(0, default_material)
+			mirror_instance.set_surface_override_material(0, TerrainyCore.DefaultMirrorTerrainMaterial)
 	
 	return mirror_instance
 
