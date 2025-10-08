@@ -194,10 +194,10 @@ func set_terrain_size_on_plane_mesh(configuration: TerrainConfiguration, plane_m
 		plane_mesh.material = TerrainyCore.DefaultTerrainMaterial
 	
 
-func generate_collisions(configuration: TerrainConfiguration, terrain_mesh: MeshInstance3D) -> void:
-	if configuration.collision_type == TerrainyCore.CollisionType.Trimesh:
+func generate_collisions(collision_type: TerrainyCore.CollisionType, terrain_mesh: MeshInstance3D) -> void:
+	if collision_type == TerrainyCore.CollisionType.Trimesh:
 		terrain_mesh.create_trimesh_collision()
-	elif configuration.collision_type == TerrainyCore.CollisionType.ConcavePolygon:
+	elif collision_type == TerrainyCore.CollisionType.ConcavePolygon:
 		var static_body: StaticBody3D = StaticBody3D.new()
 		static_body.name = "TerrainStaticBody"
 		
@@ -242,20 +242,25 @@ func on_terrain_generation_finished() -> void:
 	
 	for i in pending_terrain_surfaces.size():
 		var terrain_mesh: MeshInstance3D = terrain_meshes.keys()[i]
+		var configuration: TerrainConfiguration = terrain_meshes[terrain_mesh]
 		terrain_mesh.mesh = pending_terrain_surfaces[i].commit() 
-	
-		generate_collisions(terrain_meshes[terrain_mesh], terrain_mesh)
-		
 		terrain_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		terrain_mesh.add_to_group(nav_source_group_name)
 		
-		if terrain_meshes[terrain_mesh].generate_mirror:
-			var mirror_instance: MeshInstance3D = TerrainyCore.create_mirrored_terrain(terrain_mesh, terrain_meshes[terrain_mesh])
+		if configuration.generate_mirror:
+			var terrain_mirror_mesh: MeshInstance3D = TerrainyCore.create_mirrored_terrain(terrain_mesh, configuration)
 			
-			if mirror_instance:
-				terrain_mesh.call_thread_safe("add_child", mirror_instance)
-				call_thread_safe("_set_owner_to_edited_scene_root", mirror_instance)
+			if terrain_mirror_mesh:
+				terrain_mesh.call_thread_safe("add_child", terrain_mirror_mesh)
+				call_thread_safe("_set_owner_to_edited_scene_root", terrain_mirror_mesh)
 				
+				generate_collisions(configuration.mirror_collision_type, terrain_mirror_mesh)
+				
+		generate_collisions(configuration.collision_type, terrain_mesh)
+		
+		
+		
+	
 	create_navigation_region(navigation_region)
 
 #endregion

@@ -45,6 +45,7 @@ class_name TerrainConfiguration extends Resource
 @export_group("Mirror")
 ## Generate a mirrored terrain below the original terrain mesh
 @export var generate_mirror: bool = false
+@export var mirror_collision_type: TerrainyCore.CollisionType = TerrainyCore.CollisionType.None
 ## The mirror offset allows to avoid shadow artifacts when 2 meshes are glue together. 
 @export_range(0.01, 100.0, 0.01) var mirror_offset: float = 0.01
 ## The height to the bottom of the mirror mesh.
