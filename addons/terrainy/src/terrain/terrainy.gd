@@ -65,30 +65,52 @@ func generate_terrain_grid(terrain_grid_size: int = grid_size) -> void:
 		
 	var grid_terrains: Array[Terrain] = []
 	
-	for _i: int in terrain_grid_size:
+	for index: int in terrain_grid_size:
 		var new_terrain: Terrain = Terrain.new()
 		new_terrain.configuration = _pick_weighted_grid_terrain_configuration(grid_terrain_configurations)
 		grid_terrains.append(new_terrain)
 		grid_spawn_node.add_child(new_terrain)
+		new_terrain.position = Vector3.ZERO
+		new_terrain.name = "GridTerrain%d" % index
 	
-	generate_terrains(grid_terrains)
+	call_deferred("generate_terrains", grid_terrains)
 	
 	terrain_generation_finished.connect(
 		func(terrains: Array[Terrain]): 
-			var count: int = 0
-			var target_terrains: Array[Terrain] = []
-			target_terrains.assign(terrains.filter(func(terrain: Terrain): return terrain.neighbours_available().size() > 0))
+			if terrains.is_empty():
+				push_warning("Terrainy->generate_terrain_grid: No terrains generated for grid allocation.")
+				return
 			
-			while count < terrain_grid_size and target_terrains.size() > 1:
-				var terrain: Terrain = target_terrains.pop_front()
+			var to_expand: Array[Terrain] = [terrains.front()]
+			var placed_terrains: Array[Terrain] = [terrains.front()]
+			var available_terrains: Array[Terrain] = terrains.filter(func(terrain: Terrain): return terrain != to_expand.front())
+
+			var count: int = 1
+			
+			while not to_expand.is_empty() and count < terrain_grid_size and available_terrains.size() > 0:
+				var current: Terrain = to_expand.pop_front()
 				
 				for direction: Vector3 in grid_directions:
-					var neighbour_terrain: Terrain = target_terrains.pick_random()
-					if terrain.assign_neighbour(neighbour_terrain, direction):
+					if current.neighbours[direction] != null:
+						continue  
+					
+					if available_terrains.is_empty():
+						break
+					
+					var next_terrain: Terrain = available_terrains.pop_front()
+					var result: bool = current.assign_neighbour(next_terrain, direction)
+					
+					if result:
 						count += 1
-						generate_side_terrain(terrain, neighbour_terrain, direction)
+						call_deferred("generate_side_terrain", current, next_terrain, direction)
+						to_expand.append(next_terrain)
+						placed_terrains.append(next_terrain)
 						
-				target_terrains = target_terrains.filter(func(terrain: Terrain): return terrain.neighbours_available().size() > 0)
+						if count >= terrain_grid_size:
+							break
+				
+				if count >= terrain_grid_size:
+					break
 				
 			, CONNECT_ONE_SHOT)
 
@@ -290,27 +312,27 @@ func generate_side_terrain(origin_terrain: Terrain, new_terrain: Terrain, direct
 		push_error("Terrainy->generate_side_terrain: One of the meshes has no surfaces.")
 		return
 
-	var origin_conf: TerrainConfiguration = origin_terrain.configuration
-	var new_conf: TerrainConfiguration = new_terrain.configuration
-	
-	if origin_conf == null or new_conf == null:
+	if origin_terrain.configuration == null or new_terrain.configuration == null:
 		push_error("Terrainy->generate_side_terrain: Missing TerrainConfiguration for one of the terrains.")
 		return
-
-	var width: int = origin_conf.size_width
-	var depth: int = origin_conf.size_depth
-	var resolution: int = origin_conf.mesh_resolution
-
-	var offset_local: Vector3 = Vector3.ZERO
-	
-	if abs(direction.x) > abs(direction.z):
-		offset_local.x = sign(direction.x) * width
 		
-	elif abs(direction.z) > abs(direction.x):
-		offset_local.z = sign(direction.z) * depth
-
-	var offset_global: Vector3 = origin_terrain.global_transform.basis * offset_local
-	new_terrain.global_position = origin_terrain.global_position + offset_global
+	var width: int = origin_terrain.configuration.size_width
+	var depth: int = origin_terrain.configuration.size_depth
+	var resolution: int = origin_terrain.configuration.mesh_resolution
+	
+	if not new_terrain.grid_positioned:
+		new_terrain.grid_positioned = true
+		
+		var offset_local: Vector3 = Vector3.ZERO
+		
+		if abs(direction.x) > abs(direction.z):
+			offset_local.x = sign(direction.x) * width
+			
+		elif abs(direction.z) > abs(direction.x):
+			offset_local.z = sign(direction.z) * depth
+		
+		var offset_global: Vector3 = origin_terrain.global_transform.basis * offset_local
+		new_terrain.global_position = origin_terrain.global_position + offset_global
 
 	var origin_st: SurfaceTool = SurfaceTool.new()
 	origin_st.create_from(origin_terrain.mesh, 0)
@@ -325,8 +347,8 @@ func generate_side_terrain(origin_terrain: Terrain, new_terrain: Terrain, direct
 	new_mdt.create_from_surface(new_mesh, 0)
 
 	var match_axis: Vector2 = Vector2.ZERO
-	var origin_edge: Array[Vector3] = []
-	var new_edge: Array[Vector3] = []
+	var origin_edge = []
+	var new_edge = []
 
 	if abs(direction.x) > abs(direction.z):
 		match_axis = Vector2(1, 0)
@@ -346,7 +368,7 @@ func generate_side_terrain(origin_terrain: Terrain, new_terrain: Terrain, direct
 		else:
 			origin_edge = _get_edge_vertices(origin_mdt, -depth * 0.5, "z", true)
 			new_edge = _get_edge_vertices(new_mdt, depth * 0.5, "z", false)
-
+	
 	if origin_edge.size() == new_edge.size():
 		for i in range(origin_edge.size()):
 			var origin_v = origin_edge[i]
@@ -455,6 +477,9 @@ func _on_tool_button_pressed(text: String) -> void:
 func _pick_weighted_grid_terrain_configuration(configurations: Dictionary[TerrainConfiguration, float] = grid_terrain_configurations) -> TerrainConfiguration:
 	if configurations.is_empty():
 		return null
+		
+	if configurations.size() == 1:
+		return configurations.keys().front()
 	
 	var total_weight: float = 0.0
 	
@@ -474,8 +499,9 @@ func _pick_weighted_grid_terrain_configuration(configurations: Dictionary[Terrai
 	return configurations.keys()[0]
 
 
-func _get_edge_vertices(mdt: MeshDataTool, edge_value: float, axis: String, return_vertices: bool = false) -> Array[Vector3]:
-	var verts: Array[Vector3] = []
+func _get_edge_vertices(mdt: MeshDataTool, edge_value: float, axis: String, return_vertices: bool = false) -> Array[Variant]:
+	var verts: Array[Variant] = []
+	
 	
 	for i: int in range(mdt.get_vertex_count()):
 		var vertex: Vector3 = mdt.get_vertex(i)

@@ -14,5 +14,4 @@ max_terrain_height = 45.0
 randomize_noise_seed = true
 noise = ExtResource("2_p6g4l")
 elevation_curve = ExtResource("1_bhupm")
-generate_mirror = true
 metadata/_custom_type_script = "uid://ce4bgela2op7d"

@@ -8,6 +8,8 @@ const GridGroupName: StringName = &"grid_terrains"
 @export var configuration: TerrainConfiguration
 
 var mirror: Terrain
+
+var valid_neighbour_directions: Array[Vector3] = [Vector3.FORWARD, Vector3.BACK, Vector3.RIGHT, Vector3.LEFT]
 var neighbours: Dictionary[Vector3, Terrain] = {
 	Vector3.FORWARD: null,
 	Vector3.BACK: null,
@@ -15,13 +17,15 @@ var neighbours: Dictionary[Vector3, Terrain] = {
 	Vector3.LEFT: null,
 }
 
-var valid_neighbour_directions: Array[Vector3] = [Vector3.FORWARD, Vector3.BACK, Vector3.RIGHT, Vector3.LEFT]
 var opposite_directions: Dictionary = {
 	Vector3.RIGHT: Vector3.LEFT, 
 	Vector3.LEFT: Vector3.RIGHT, 
 	Vector3.FORWARD: Vector3.BACK, 
 	Vector3.BACK: Vector3.FORWARD
 }
+
+## To avoid update the position when it's already in a terrain grid.
+var grid_positioned: bool = false
 
 
 func _enter_tree() -> void:
@@ -41,7 +45,7 @@ func assign_neighbour(neighbour_terrain: Terrain, direction: Vector3) -> bool:
 		and neighbour_terrain.neighbours[opposite_directions[direction]] == null:
 			
 			neighbours[direction] = neighbour_terrain
-			neighbour_terrain[opposite_directions[direction]] = self
+			neighbour_terrain.neighbours[opposite_directions[direction]] = self
 			
 			if not self.is_in_group(GridGroupName):
 				self.add_to_group(GridGroupName)
@@ -52,10 +56,13 @@ func assign_neighbour(neighbour_terrain: Terrain, direction: Vector3) -> bool:
 			return true
 		
 	return false
-	
+
+func all_neighbours_available() -> bool:
+	return neighbours_available().size() == valid_neighbour_directions.size()
+
 	
 func neighbours_available() -> Array[Vector3]:
-	return neighbours.keys().filter(func(direction: Vector3): return neighbours[direction] != null)
+	return neighbours.keys().filter(func(direction: Vector3): return neighbours[direction] == null)
 
 
 func has_noise_available() -> bool:

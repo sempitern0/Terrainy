@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="TerrainConfiguration" load_steps=4 format=3 uid="uid://dajmwkoi06xqc"]
 
-[ext_resource type="Curve" uid="uid://cqxgwej7by6q3" path="res://scenes/world/biomes/ondulated_forest/ondulated_forest_curve.tres" id="1_pmx0k"]
-[ext_resource type="FastNoiseLite" uid="uid://dd8b4j4fxvjks" path="res://scenes/world/biomes/ondulated_forest/ondulated_forest_noise.tres" id="2_pvc2n"]
+[ext_resource type="Curve" uid="uid://cqxgwej7by6q3" path="res://addons/terrainy/src/biomes/ondulated_forest/ondulated_forest_curve.tres" id="1_pmx0k"]
+[ext_resource type="FastNoiseLite" uid="uid://dd8b4j4fxvjks" path="res://addons/terrainy/src/biomes/ondulated_forest/ondulated_forest_noise.tres" id="2_pvc2n"]
 [ext_resource type="Script" uid="uid://ce4bgela2op7d" path="res://addons/terrainy/src/terrain/terrain_configuration.gd" id="3_7xwro"]
 
 [resource]
@@ -12,6 +12,5 @@ max_terrain_height = 30.0
 randomize_noise_seed = true
 noise = ExtResource("2_pvc2n")
 elevation_curve = ExtResource("1_pmx0k")
-generate_mirror = true
 mirror_depth = 10.0
 metadata/_custom_type_script = "uid://ce4bgela2op7d"
