@@ -4,8 +4,25 @@ class_name Terrainy extends Node
 signal terrain_generation_finished
 
 @export var button_Generate_Terrain: String
+@export var button_Generate_Terrain_Grid: String
 ## The target MeshInstance3D where the mesh will be generated. If no Mesh is defined, a new PlaneMesh is created instead.
 @export var terrains: Array[Terrain] = []
+@export_category("Grid")
+@export var grid_spawn_node: Node3D
+## For better results make sure all the terrain configurations have the same depth, width and mesh resolution
+@export var grid_size: int = 8:
+	set(value):
+		grid_size = maxi(value, 2)
+@export var grid_directions: Array[Vector3] = [
+	Vector3.FORWARD,
+	Vector3.BACK,
+	Vector3.RIGHT,
+	Vector3.LEFT
+]
+## A set of terrain configurations to appear in the grid, you can configure the weight for
+## each of them to set the probability.
+@export var grid_terrain_configurations: Dictionary[TerrainConfiguration, float] = {}
+
 @export_category("Navigation region")
 @export var nav_source_group_name: StringName = &"terrain_navigation_source"
 ## This navigation needs to set the value Source Geometry -> Group Explicit
@@ -16,22 +33,48 @@ signal terrain_generation_finished
 
 var thread: Thread
 var pending_terrain_surfaces: Array[SurfaceTool] = []
+var current_terrains: Array[Terrain] = []
+var as_grid: bool = false
 
 
-func generate_terrains() -> void:
-	if terrains.is_empty():
+func generate_terrains(selected_terrains: Array[Terrain] = [], as_grid_terrain: bool = false) -> void:
+	if selected_terrains.is_empty():
 		push_warning("Terrainy->generate_terrains: This node needs at least one Terrain to start the generation, aborting...")
 		return
+	
+	as_grid = as_grid_terrain
 	
 	if not terrain_generation_finished.is_connected(on_terrain_generation_finished):
 		terrain_generation_finished.connect(on_terrain_generation_finished)
 		
 	pending_terrain_surfaces.clear()
+	current_terrains.clear()
+	current_terrains = selected_terrains
 	
-	print("Terrainy: Generating a total of %d terrains..." % terrains.size())
+	print("Terrainy->generate_terrains: Generating a total of %d terrains..." % selected_terrains.size())
 	
-	var terrain_task_id: int = WorkerThreadPool.add_group_task(process_terrain_generation, terrains.size())
+	var terrain_task_id: int = WorkerThreadPool.add_group_task(process_terrain_generation, selected_terrains.size())
 	WorkerThreadPool.wait_for_group_task_completion(terrain_task_id)
+
+
+func generate_terrain_grid(size: int = grid_size) -> void:
+	if grid_terrain_configurations.is_empty():
+		push_warning("Terrainy->generate_terrain_grid: No terrain configurations detected to generate the grid, aborting...")
+		return
+		
+	if grid_spawn_node == null:
+		push_warning("Terrainy->generate_terrain_grid: No grid spawn node detected to create the terrains, aborting...")
+		return
+		
+	var grid_terrains: Array[Terrain] = []
+	
+	for _i: int in size:
+		var new_terrain: Terrain = Terrain.new()
+		new_terrain.configuration = _pick_weighted_grid_terrain_configuration(grid_terrain_configurations)
+		grid_terrains.append(new_terrain)
+		grid_spawn_node.add_child(new_terrain)
+	
+	generate_terrains(grid_terrains)
 
 
 func process_terrain_generation(index: int) -> void:
@@ -86,7 +129,8 @@ func create_surface(terrain: Terrain) -> void:
 	pending_terrain_surfaces.append(surface)
 	
 	if pending_terrain_surfaces.size() == terrains.size():
-		call_deferred_thread_group("emit_signal", "terrain_generation_finished")
+		
+		call_deferred_thread_group("emit_signal", "terrain_generation_finished", current_terrains, as_grid)
 
 
 func generate_heightmap_with_noise(configuration: TerrainConfiguration, mesh_data_tool: MeshDataTool) -> void:
@@ -359,11 +403,11 @@ func create_navigation_region(selected_navigation_region: NavigationRegion3D = n
 	#
 #
 
-func on_terrain_generation_finished() -> void:
-	print("Terrainy: Generation of %d terrain meshes is finished! " % terrains.size())
+func on_terrain_generation_finished(selected_terrains: Array[Terrain], as_grid_terrain: bool = false) -> void:
+	print("Terrainy: Generation of %d terrain meshes is finished! " % selected_terrains.size())
 	
 	for i in pending_terrain_surfaces.size():
-		var terrain: Terrain = terrains[i]
+		var terrain: Terrain = selected_terrains[i]
 	
 		terrain.mesh = pending_terrain_surfaces[i].commit() 
 		terrain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -375,13 +419,17 @@ func on_terrain_generation_finished() -> void:
 			if terrain_mirror:
 				terrain.call_thread_safe("add_child", terrain_mirror)
 				call_thread_safe("_set_owner_to_edited_scene_root", terrain_mirror)
+				terrain.mirror.global_transform = terrain.global_transform
 				
 				generate_collisions(terrain.configuration.mirror_collision_type, terrain_mirror)
 				
 		generate_collisions(terrain.configuration.collision_type, terrain)
 		
 	create_navigation_region(navigation_region)
-
+	
+	if as_grid_terrain:
+		pass
+		
 
 #region Helpers
 func _set_owner_to_edited_scene_root(node: Node) -> void:
@@ -403,7 +451,31 @@ func _free_children(node: Node) -> void:
 func _on_tool_button_pressed(text: String) -> void:
 	match text:
 		"Generate Terrain":
-			generate_terrains()
+			generate_terrains(terrains)
+		"Generate Terrain Grid":
+			generate_terrain_grid(grid_size)
+
+
+func _pick_weighted_grid_terrain_configuration(configurations: Dictionary[TerrainConfiguration, float] = grid_terrain_configurations) -> TerrainConfiguration:
+	if configurations.is_empty():
+		return null
+	
+	var total_weight: float = 0.0
+	
+	for weight: float in configurations.values():
+		total_weight += weight
+
+	var random: float = randf() * total_weight
+	var accumulative: float = 0.0
+	
+	for config: TerrainConfiguration in configurations.keys():
+		accumulative += configurations[config]
+		
+		if random <= accumulative:
+			return config
+	
+	# Fallback (por si acaso)
+	return configurations.keys()[0]
 
 
 func _get_edge_vertices(mdt: MeshDataTool, edge_value: float, axis: String, return_vertices: bool = false) -> Array[Vector3]:
