@@ -49,7 +49,7 @@ class_name TerrainConfiguration extends Resource
 ## The mirror offset allows to avoid shadow artifacts when 2 meshes are glue together. 
 @export_range(0.01, 100.0, 0.01) var mirror_offset: float = 0.01
 ## The height to the bottom of the mirror mesh.
-@export var mirror_depth: float = 25.0
+@export var mirror_depth: float = 5.0
 @export var mirror_vertex_scale: float = 0.15
 @export var mirror_max_vertex_amplitude: float = 15.0
 ## Useful if you want to create a variant for the bottom part for a more organic result.

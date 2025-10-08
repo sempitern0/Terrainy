@@ -19,21 +19,21 @@ static func get_noise_y_normalized(selected_noise: FastNoiseLite, vertex: Vector
 	return (selected_noise.get_noise_2d(vertex.x, vertex.z) + 1) / 2
 
 
-static func create_mirrored_terrain(terrain_mesh: MeshInstance3D, configuration: TerrainConfiguration) -> MeshInstance3D:
-	if not is_instance_valid(terrain_mesh) or terrain_mesh.mesh == null:
+static func create_mirrored_terrain(original_terrain: Terrain) -> Terrain:
+	if not is_instance_valid(original_terrain) or original_terrain.mesh == null:
 		push_error("TerrainyCore->create_mirrored_terrain: The original terrain mesh does not have a valid Mesh assigned, aborting...")
 		return null
 	
-	var src_mesh: Mesh = terrain_mesh.mesh
+	var source_mesh: Mesh = original_terrain.mesh
 	var mirror_array: ArrayMesh = ArrayMesh.new()
-	var eps: float = configuration.mirror_offset
-	var depth: float = configuration.mirror_depth
+	var eps: float = original_terrain.configuration.mirror_offset
+	var depth: float = original_terrain.configuration.mirror_depth
 
 	var global_center: Vector3 = Vector3.ZERO
 	var total_v: int = 0
 
-	for surface in range(src_mesh.get_surface_count()):
-		var surface_arrays: Array = src_mesh.surface_get_arrays(surface)
+	for surface in range(source_mesh.get_surface_count()):
+		var surface_arrays: Array = source_mesh.surface_get_arrays(surface)
 		var verts: PackedVector3Array = surface_arrays[Mesh.ARRAY_VERTEX]
 		
 		for vertex in verts:
@@ -63,11 +63,11 @@ static func create_mirrored_terrain(terrain_mesh: MeshInstance3D, configuration:
 			top.append(Vector3(v.x, v.y - eps, v.z))
 			var n_offset: float
 			
-			if configuration.mirror_noise:
-				n_offset = configuration.mirror_noise.get_noise_2d(v.x, v.z) * depth * 0.25
+			if original_terrain.configuration.mirror_noise:
+				n_offset = original_terrain.configuration.mirror_noise.get_noise_2d(v.x, v.z) * depth * 0.25
 			else:
-				var scale: float = configuration.mirror_vertex_scale
-				var max_amp: float = configuration.mirror_max_vertex_amplitude
+				var scale: float = original_terrain.configuration.mirror_vertex_scale
+				var max_amp: float = original_terrain.configuration.mirror_max_vertex_amplitude
 				var amplitude: float = minf(depth * 0.25, max_amp)
 				var base_noise: float = sin(v.x * scale + v.z * scale) * cos(v.x * scale * 0.5 + v.z * scale * 0.5)
 				n_offset = -absf(base_noise) * amplitude * 0.8
@@ -95,7 +95,7 @@ static func create_mirrored_terrain(terrain_mesh: MeshInstance3D, configuration:
 			var offset_dir: Vector3 = (normals_src[i] if i < normals_src.size() else Vector3.DOWN).normalized()
 			bottom.append(v - offset_dir * (depth + n_offset))
 			
-			var t: float = clampf((absf(v.y) / configuration.max_terrain_height), 0.0, 1.0)
+			var t: float = clampf((absf(v.y) / original_terrain.configuration.max_terrain_height), 0.0, 1.0)
 			bottom_v.y = lerpf(top_v.y, bottom_v.y, pow(t, 0.6))
 		
 		var combined: PackedVector3Array = PackedVector3Array()
@@ -204,19 +204,22 @@ static func create_mirrored_terrain(terrain_mesh: MeshInstance3D, configuration:
 			st.generate_tangents()
 			st.commit(mirror_array)
 
-	var mirror_instance: MeshInstance3D = MeshInstance3D.new()
-	mirror_instance.name = "%sMirror" % terrain_mesh.name
-	mirror_instance.mesh = mirror_array
-	mirror_instance.transform = terrain_mesh.transform
-	mirror_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var mirror_terrain: Terrain = Terrain.new()
+	mirror_terrain.configuration = original_terrain.configuration
+	mirror_terrain.name = "%sMirror" % original_terrain.name
+	mirror_terrain.mesh = mirror_array
+	mirror_terrain.transform = original_terrain.transform
+	mirror_terrain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
-	if configuration.mirror_material:
-		configuration.mirror_material.cull_mode = BaseMaterial3D.CULL_DISABLED
-		mirror_instance.set_surface_override_material(0, configuration.mirror_material)
+	if original_terrain.configuration.mirror_material:
+		original_terrain.configuration.mirror_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+		mirror_terrain.set_surface_override_material(0, original_terrain.configuration.mirror_material)
 	else:
-		mirror_instance.set_surface_override_material(0, TerrainyCore.DefaultMirrorTerrainMaterial)
+		mirror_terrain.set_surface_override_material(0, TerrainyCore.DefaultMirrorTerrainMaterial)
 	
-	return mirror_instance
+	original_terrain.add_mirror_terrain(mirror_terrain)
+	
+	return mirror_terrain
 
 
 static func _add_edge(edge_map: Dictionary, a: int, b: int) -> void:
