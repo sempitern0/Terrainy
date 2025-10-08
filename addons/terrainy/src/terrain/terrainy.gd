@@ -1,7 +1,8 @@
 @tool
 class_name Terrainy extends Node
 
-signal terrain_generation_finished
+signal terrain_surfaces_finished(finished_surfaces: Dictionary[Terrain, SurfaceTool])
+signal terrain_generation_finished(finished_terrains: Array[Terrain])
 
 @export var button_Generate_Terrain: String
 @export var button_Generate_Terrain_Grid: String
@@ -32,32 +33,28 @@ signal terrain_generation_finished
 @export var bake_navigation_region_in_runtime: bool = false
 
 var thread: Thread
-var pending_terrain_surfaces: Array[SurfaceTool] = []
-var current_terrains: Array[Terrain] = []
-var as_grid: bool = false
+var pending_terrain_surfaces: Dictionary[Terrain, SurfaceTool] = {}
 
 
-func generate_terrains(selected_terrains: Array[Terrain] = [], as_grid_terrain: bool = false) -> void:
+func generate_terrains(selected_terrains: Array[Terrain] = []) -> void:
 	if selected_terrains.is_empty():
 		push_warning("Terrainy->generate_terrains: This node needs at least one Terrain to start the generation, aborting...")
 		return
-	
-	as_grid = as_grid_terrain
-	
-	if not terrain_generation_finished.is_connected(on_terrain_generation_finished):
-		terrain_generation_finished.connect(on_terrain_generation_finished)
+		
+	if not terrain_surfaces_finished.is_connected(on_terrain_surfaces_finished):
+		terrain_surfaces_finished.connect(on_terrain_surfaces_finished)
 		
 	pending_terrain_surfaces.clear()
-	current_terrains.clear()
-	current_terrains = selected_terrains
 	
 	print("Terrainy->generate_terrains: Generating a total of %d terrains..." % selected_terrains.size())
 	
-	var terrain_task_id: int = WorkerThreadPool.add_group_task(process_terrain_generation, selected_terrains.size())
+	var terrain_task_id: int = WorkerThreadPool.add_group_task(process_terrain_generation.bind(selected_terrains), selected_terrains.size())
 	WorkerThreadPool.wait_for_group_task_completion(terrain_task_id)
 
 
-func generate_terrain_grid(size: int = grid_size) -> void:
+func generate_terrain_grid(terrain_grid_size: int = grid_size) -> void:
+	terrain_grid_size = maxi(terrain_grid_size, 2)
+	
 	if grid_terrain_configurations.is_empty():
 		push_warning("Terrainy->generate_terrain_grid: No terrain configurations detected to generate the grid, aborting...")
 		return
@@ -68,16 +65,35 @@ func generate_terrain_grid(size: int = grid_size) -> void:
 		
 	var grid_terrains: Array[Terrain] = []
 	
-	for _i: int in size:
+	for _i: int in terrain_grid_size:
 		var new_terrain: Terrain = Terrain.new()
 		new_terrain.configuration = _pick_weighted_grid_terrain_configuration(grid_terrain_configurations)
 		grid_terrains.append(new_terrain)
 		grid_spawn_node.add_child(new_terrain)
 	
 	generate_terrains(grid_terrains)
+	
+	terrain_generation_finished.connect(
+		func(terrains: Array[Terrain]): 
+			var count: int = 0
+			var target_terrains: Array[Terrain] = []
+			target_terrains.assign(terrains.filter(func(terrain: Terrain): return terrain.neighbours_available().size() > 0))
+			
+			while count < terrain_grid_size and target_terrains.size() > 1:
+				var terrain: Terrain = target_terrains.pop_front()
+				
+				for direction: Vector3 in grid_directions:
+					var neighbour_terrain: Terrain = target_terrains.pick_random()
+					if terrain.assign_neighbour(neighbour_terrain, direction):
+						count += 1
+						generate_side_terrain(terrain, neighbour_terrain, direction)
+						
+				target_terrains = target_terrains.filter(func(terrain: Terrain): return terrain.neighbours_available().size() > 0)
+				
+			, CONNECT_ONE_SHOT)
 
 
-func process_terrain_generation(index: int) -> void:
+func process_terrain_generation(index: int, terrains: Array[Terrain]) -> void:
 	generate_terrain(terrains[index])
 	
 
@@ -126,11 +142,10 @@ func create_surface(terrain: Terrain) -> void:
 	surface.generate_normals()
 	surface.generate_tangents()
 	
-	pending_terrain_surfaces.append(surface)
+	pending_terrain_surfaces[terrain] = surface
 	
-	if pending_terrain_surfaces.size() == terrains.size():
-		
-		call_deferred_thread_group("emit_signal", "terrain_generation_finished", current_terrains, as_grid)
+	if pending_terrain_surfaces.keys().size() == terrains.size():
+		call_deferred_thread_group("emit_signal", "terrain_surfaces_finished", pending_terrain_surfaces)
 
 
 func generate_heightmap_with_noise(configuration: TerrainConfiguration, mesh_data_tool: MeshDataTool) -> void:
@@ -264,152 +279,134 @@ func create_navigation_region(selected_navigation_region: NavigationRegion3D = n
 	navigation_region = selected_navigation_region
 
 
-#func generate_side_terrain(origin_terrain: MeshInstance3D, new_terrain: MeshInstance3D, direction: Vector3) -> void:
-	## --- Validaciones ---
-	#if origin_terrain == null or origin_terrain.mesh == null:
-		#push_error("generate_side_terrain: origin_terrain is invalid or has no mesh.")
-		#return
-	#if new_terrain == null or new_terrain.mesh == null:
-		#push_error("generate_side_terrain: new_terrain is invalid or has no mesh.")
-		#return
-	#if origin_terrain.mesh.get_surface_count() == 0 or new_terrain.mesh.get_surface_count() == 0:
-		#push_error("generate_side_terrain: One of the meshes has no surfaces.")
-		#return
-#
-	## --- Obtener configuración base ---
-	#var origin_conf: TerrainConfiguration = terrain_meshes.get(origin_terrain, null)
-	#var new_conf: TerrainConfiguration = terrain_meshes.get(new_terrain, null)
-	#if origin_conf == null or new_conf == null:
-		#push_error("generate_side_terrain: Missing TerrainConfiguration for one of the terrains.")
-		#return
-#
-	#var width := origin_conf.size_width
-	#var depth := origin_conf.size_depth
-	#var resolution := origin_conf.mesh_resolution
-#
-	## --- Calcular offset del nuevo terreno según la dirección ---
-	#var offset_local := Vector3.ZERO
-	#if abs(direction.x) > abs(direction.z):
-		## movimiento en eje X (derecha/izquierda)
-		#offset_local.x = sign(direction.x) * width
-	#elif abs(direction.z) > abs(direction.x):
-		## movimiento en eje Z (frontal/trasero)
-		#offset_local.z = sign(direction.z) * depth
-#
-	#var offset_global := origin_terrain.global_transform.basis * offset_local
-	#new_terrain.global_position = origin_terrain.global_position + offset_global
-#
-	## --- Crear MeshDataTools seguros ---
-	#var origin_st := SurfaceTool.new()
-	#origin_st.create_from(origin_terrain.mesh, 0)
-	#var origin_mesh := origin_st.commit()
-	#var origin_mdt := MeshDataTool.new()
-	#origin_mdt.create_from_surface(origin_mesh, 0)
-#
-	#var new_st := SurfaceTool.new()
-	#new_st.create_from(new_terrain.mesh, 0)
-	#var new_mesh := new_st.commit()
-	#var new_mdt := MeshDataTool.new()
-	#new_mdt.create_from_surface(new_mesh, 0)
-#
-	## --- Determinar los bordes a encajar ---
-	#var match_axis := Vector2.ZERO
-	#var origin_edge := []
-	#var new_edge := []
-#
-	#if abs(direction.x) > abs(direction.z):
-		## Encajar bordes izquierdo/derecho
-		#match_axis = Vector2(1, 0)
-		#if direction.x > 0:
-			## Nuevo terreno a la derecha -> usar borde +X del original y borde -X del nuevo
-			#origin_edge = _get_edge_vertices(origin_mdt, width * 0.5, "x", true)
-			#new_edge = _get_edge_vertices(new_mdt, -width * 0.5, "x", false)
-		#else:
-			## Nuevo terreno a la izquierda -> usar borde -X del original y borde +X del nuevo
-			#origin_edge = _get_edge_vertices(origin_mdt, -width * 0.5, "x", true)
-			#new_edge = _get_edge_vertices(new_mdt, width * 0.5, "x", false)
-	#else:
-		## Encajar bordes frontal/trasero
-		#match_axis = Vector2(0, 1)
-		#if direction.z > 0:
-			## Nuevo al fondo -> borde +Z del original y borde -Z del nuevo
-			#origin_edge = _get_edge_vertices(origin_mdt, depth * 0.5, "z", true)
-			#new_edge = _get_edge_vertices(new_mdt, -depth * 0.5, "z", false)
-		#else:
-			## Nuevo al frente -> borde -Z del original y borde +Z del nuevo
-			#origin_edge = _get_edge_vertices(origin_mdt, -depth * 0.5, "z", true)
-			#new_edge = _get_edge_vertices(new_mdt, depth * 0.5, "z", false)
-#
-	## --- Aplicar alturas del borde del original sobre el nuevo ---
-	#if origin_edge.size() == new_edge.size():
-		#for i in range(origin_edge.size()):
-			#var origin_v = origin_edge[i]
-			#var new_idx = new_edge[i]
-			#var new_v := new_mdt.get_vertex(new_idx)
-			#new_v.y = origin_v.y
-			#new_mdt.set_vertex(new_idx, new_v)
-			#
-	#var blend_width := 3  
-	#var blend_axis := ""
-	#var sign_dir := 1.0
-#
-	#if abs(direction.x) > abs(direction.z):
-		#blend_axis = "x"
-		#sign_dir = sign(direction.x)
-	#else:
-		#blend_axis = "z"
-		#sign_dir = sign(direction.z)
-#
-	#for i in range(new_mdt.get_vertex_count()):
-		#var v := new_mdt.get_vertex(i)
-		#var distance_from_edge := 0.0
-#
-		#if blend_axis == "x":
-			## distancia desde el borde de encaje en coordenadas locales
-			#var edge_pos = (-width * 0.5) if (sign_dir > 0) else (width * 0.5)
-			#distance_from_edge = abs(v.x - edge_pos) / (width / float(resolution))
-		#else:
-			#var edge_pos = (-depth * 0.5) if (sign_dir > 0) else (depth * 0.5)
-			#distance_from_edge = abs(v.z - edge_pos) / (depth / float(resolution))
-#
-		## dentro del rango de mezcla
-		#if distance_from_edge > 0 and distance_from_edge <= blend_width:
-			#var t := 1.0 - (distance_from_edge / float(blend_width))
-			## tomar el vértice del borde más cercano
-			#var nearest_edge_height := 0.0
-			#if origin_edge.size() > 0:
-				## usamos el primer vértice del borde para referencia media
-				#var avg_height := 0.0
-				#for e in origin_edge:
-					#avg_height += e.y
-				#nearest_edge_height = avg_height / float(origin_edge.size())
-#
-			## mezclar altura con el borde
-			#v.y = lerp(v.y, nearest_edge_height, t * 0.5)
-			#new_mdt.set_vertex(i, v)
-#
-	## --- Commit final ---
-	#new_mesh.clear_surfaces()
-	#new_mdt.commit_to_surface(new_mesh)
-#
-	#var st_final := SurfaceTool.new()
-	#st_final.begin(Mesh.PRIMITIVE_TRIANGLES)
-	#st_final.create_from(new_mesh, 0)
-	#st_final.generate_normals()
-	#st_final.generate_tangents()
-	#new_terrain.mesh = st_final.commit()
-#
-	#print("Side terrain generated successfully and aligned with direction ", direction)
-	#
-#
+func generate_side_terrain(origin_terrain: Terrain, new_terrain: Terrain, direction: Vector3) -> void:
+	if origin_terrain == null or origin_terrain.mesh == null:
+		push_error("Terrainy->generate_side_terrain: origin_terrain is invalid or has no mesh.")
+		return
+	if new_terrain == null or new_terrain.mesh == null:
+		push_error("Terrainy->generate_side_terrain: new_terrain is invalid or has no mesh.")
+		return
+	if origin_terrain.mesh.get_surface_count() == 0 or new_terrain.mesh.get_surface_count() == 0:
+		push_error("Terrainy->generate_side_terrain: One of the meshes has no surfaces.")
+		return
 
-func on_terrain_generation_finished(selected_terrains: Array[Terrain], as_grid_terrain: bool = false) -> void:
-	print("Terrainy: Generation of %d terrain meshes is finished! " % selected_terrains.size())
+	var origin_conf: TerrainConfiguration = origin_terrain.configuration
+	var new_conf: TerrainConfiguration = new_terrain.configuration
 	
-	for i in pending_terrain_surfaces.size():
-		var terrain: Terrain = selected_terrains[i]
+	if origin_conf == null or new_conf == null:
+		push_error("Terrainy->generate_side_terrain: Missing TerrainConfiguration for one of the terrains.")
+		return
+
+	var width: int = origin_conf.size_width
+	var depth: int = origin_conf.size_depth
+	var resolution: int = origin_conf.mesh_resolution
+
+	var offset_local: Vector3 = Vector3.ZERO
 	
-		terrain.mesh = pending_terrain_surfaces[i].commit() 
+	if abs(direction.x) > abs(direction.z):
+		offset_local.x = sign(direction.x) * width
+		
+	elif abs(direction.z) > abs(direction.x):
+		offset_local.z = sign(direction.z) * depth
+
+	var offset_global: Vector3 = origin_terrain.global_transform.basis * offset_local
+	new_terrain.global_position = origin_terrain.global_position + offset_global
+
+	var origin_st: SurfaceTool = SurfaceTool.new()
+	origin_st.create_from(origin_terrain.mesh, 0)
+	var origin_mesh: ArrayMesh = origin_st.commit()
+	var origin_mdt: MeshDataTool = MeshDataTool.new()
+	origin_mdt.create_from_surface(origin_mesh, 0)
+
+	var new_st: SurfaceTool= SurfaceTool.new()
+	new_st.create_from(new_terrain.mesh, 0)
+	var new_mesh: ArrayMesh = new_st.commit()
+	var new_mdt: MeshDataTool = MeshDataTool.new()
+	new_mdt.create_from_surface(new_mesh, 0)
+
+	var match_axis: Vector2 = Vector2.ZERO
+	var origin_edge: Array[Vector3] = []
+	var new_edge: Array[Vector3] = []
+
+	if abs(direction.x) > abs(direction.z):
+		match_axis = Vector2(1, 0)
+		
+		if direction.x > 0:
+			origin_edge = _get_edge_vertices(origin_mdt, width * 0.5, "x", true)
+			new_edge = _get_edge_vertices(new_mdt, -width * 0.5, "x", false)
+		else:
+			origin_edge = _get_edge_vertices(origin_mdt, -width * 0.5, "x", true)
+			new_edge = _get_edge_vertices(new_mdt, width * 0.5, "x", false)
+	else:
+		match_axis = Vector2(0, 1)
+		
+		if direction.z > 0:
+			origin_edge = _get_edge_vertices(origin_mdt, depth * 0.5, "z", true)
+			new_edge = _get_edge_vertices(new_mdt, -depth * 0.5, "z", false)
+		else:
+			origin_edge = _get_edge_vertices(origin_mdt, -depth * 0.5, "z", true)
+			new_edge = _get_edge_vertices(new_mdt, depth * 0.5, "z", false)
+
+	if origin_edge.size() == new_edge.size():
+		for i in range(origin_edge.size()):
+			var origin_v = origin_edge[i]
+			var new_idx = new_edge[i]
+			var new_v: Vector3 = new_mdt.get_vertex(new_idx)
+			new_v.y = origin_v.y
+			new_mdt.set_vertex(new_idx, new_v)
+			
+	var blend_width: int = 3  
+	var blend_axis: String = ""
+	var sign_dir: float = 1.0
+
+	if abs(direction.x) > abs(direction.z):
+		blend_axis = "x"
+		sign_dir = sign(direction.x)
+	else:
+		blend_axis = "z"
+		sign_dir = sign(direction.z)
+
+	for i in range(new_mdt.get_vertex_count()):
+		var v: Vector3 = new_mdt.get_vertex(i)
+		var distance_from_edge: float = 0.0
+
+		if blend_axis == "x":
+			var edge_pos: float = (-width * 0.5) if (sign_dir > 0) else (width * 0.5)
+			distance_from_edge = abs(v.x - edge_pos) / (width / float(resolution))
+		else:
+			var edge_pos: float = (-depth * 0.5) if (sign_dir > 0) else (depth * 0.5)
+			distance_from_edge = abs(v.z - edge_pos) / (depth / float(resolution))
+
+		if distance_from_edge > 0 and distance_from_edge <= blend_width:
+			var t: float = 1.0 - (distance_from_edge / float(blend_width))
+			var nearest_edge_height: float = 0.0
+			
+			if origin_edge.size() > 0:
+				var avg_height := 0.0
+				
+				for e in origin_edge:
+					avg_height += e.y
+				nearest_edge_height = avg_height / float(origin_edge.size())
+
+			v.y = lerp(v.y, nearest_edge_height, t * 0.5)
+			new_mdt.set_vertex(i, v)
+
+	new_mesh.clear_surfaces()
+	new_mdt.commit_to_surface(new_mesh)
+
+	var st_final: SurfaceTool = SurfaceTool.new()
+	st_final.begin(Mesh.PRIMITIVE_TRIANGLES)
+	st_final.create_from(new_mesh, 0)
+	st_final.generate_normals()
+	st_final.generate_tangents()
+	new_terrain.mesh = st_final.commit()
+
+
+func on_terrain_surfaces_finished(terrain_surfaces: Dictionary[Terrain, SurfaceTool]) -> void:
+	print("Terrainy: Generation of %d terrain surfaces is finished! " % terrain_surfaces.size())
+	
+	for terrain: Terrain in terrain_surfaces:
+		terrain.mesh = terrain_surfaces[terrain].commit() 
 		terrain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		terrain.add_to_group(nav_source_group_name)
 		
@@ -427,8 +424,7 @@ func on_terrain_generation_finished(selected_terrains: Array[Terrain], as_grid_t
 		
 	create_navigation_region(navigation_region)
 	
-	if as_grid_terrain:
-		pass
+	terrain_generation_finished.emit(terrain_surfaces.keys())
 		
 
 #region Helpers
