@@ -5,10 +5,10 @@ signal terrain_surfaces_finished(finished_surfaces: Dictionary[Terrain, SurfaceT
 signal terrain_generation_finished(finished_terrains: Array[Terrain])
 
 @export var button_Generate_Terrain: String
-@export var button_Generate_Terrain_Grid: String
 ## The target MeshInstance3D where the mesh will be generated. If no Mesh is defined, a new PlaneMesh is created instead.
 @export var terrains: Array[Terrain] = []
 @export_category("Grid")
+@export var button_Generate_Terrain_Grid: String
 @export var grid_spawn_node: Node3D
 ## For better results make sure all the terrain configurations have the same depth, width and mesh resolution
 @export var grid_size: int = 8:
