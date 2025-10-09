@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://4odxiktamqut"
-path.s3tc="res://.godot/imported/TerrainFallOfCenterLine.jpg-166ed025be742bf8165a424cbc406629.s3tc.ctex"
+uid="uid://dtfx02gvfii6m"
+path.s3tc="res://.godot/imported/Marble_07-256x256.png-f5d4088c8735d7a837249a61bf09b2e3.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://addons/terrainy/assets/falloff_images/TerrainFallOfCenterLine.jpg"
-dest_files=["res://.godot/imported/TerrainFallOfCenterLine.jpg-166ed025be742bf8165a424cbc406629.s3tc.ctex"]
+source_file="res://addons/terrainy/assets/noise_textures/256x256/Marble/Marble_07-256x256.png"
+dest_files=["res://.godot/imported/Marble_07-256x256.png-f5d4088c8735d7a837249a61bf09b2e3.s3tc.ctex"]
 
 [params]
 

@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://4odxiktamqut"
-path.s3tc="res://.godot/imported/TerrainFallOfCenterLine.jpg-166ed025be742bf8165a424cbc406629.s3tc.ctex"
+uid="uid://fw5n5g131bt0"
+path.s3tc="res://.godot/imported/Manifold_11-256x256.png-56f313622e042d4ec3f082212fc6e69a.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://addons/terrainy/assets/falloff_images/TerrainFallOfCenterLine.jpg"
-dest_files=["res://.godot/imported/TerrainFallOfCenterLine.jpg-166ed025be742bf8165a424cbc406629.s3tc.ctex"]
+source_file="res://addons/terrainy/assets/noise_textures/256x256/Manifold/Manifold_11-256x256.png"
+dest_files=["res://.godot/imported/Manifold_11-256x256.png-56f313622e042d4ec3f082212fc6e69a.s3tc.ctex"]
 
 [params]
 

@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://4odxiktamqut"
-path.s3tc="res://.godot/imported/TerrainFallOfCenterLine.jpg-166ed025be742bf8165a424cbc406629.s3tc.ctex"
+uid="uid://0r8y1ftlf4uw"
+path.s3tc="res://.godot/imported/Swirl_02-256x256.png-49ab64258ffec0c60483e88cce8cdafa.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://addons/terrainy/assets/falloff_images/TerrainFallOfCenterLine.jpg"
-dest_files=["res://.godot/imported/TerrainFallOfCenterLine.jpg-166ed025be742bf8165a424cbc406629.s3tc.ctex"]
+source_file="res://addons/terrainy/assets/noise_textures/256x256/Swirl/Swirl_02-256x256.png"
+dest_files=["res://.godot/imported/Swirl_02-256x256.png-49ab64258ffec0c60483e88cce8cdafa.s3tc.ctex"]
 
 [params]
 

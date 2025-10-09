@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://4odxiktamqut"
-path.s3tc="res://.godot/imported/TerrainFallOfCenterLine.jpg-166ed025be742bf8165a424cbc406629.s3tc.ctex"
+uid="uid://hwgah47q3mgn"
+path.s3tc="res://.godot/imported/SuperNoise_02-256x256.png-8c9d4e0856368ad6d65ea93e68c377d4.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://addons/terrainy/assets/falloff_images/TerrainFallOfCenterLine.jpg"
-dest_files=["res://.godot/imported/TerrainFallOfCenterLine.jpg-166ed025be742bf8165a424cbc406629.s3tc.ctex"]
+source_file="res://addons/terrainy/assets/noise_textures/256x256/Super Noise/SuperNoise_02-256x256.png"
+dest_files=["res://.godot/imported/SuperNoise_02-256x256.png-8c9d4e0856368ad6d65ea93e68c377d4.s3tc.ctex"]
 
 [params]
 

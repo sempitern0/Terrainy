@@ -23,7 +23,6 @@ signal terrain_generation_finished(finished_terrains: Array[Terrain])
 ## A set of terrain configurations to appear in the grid, you can configure the weight for
 ## each of them to set the probability.
 @export var grid_terrain_configurations: Dictionary[TerrainConfiguration, float] = {}
-
 @export_category("Navigation region")
 @export var nav_source_group_name: StringName = &"terrain_navigation_source"
 ## This navigation needs to set the value Source Geometry -> Group Explicit
@@ -123,11 +122,18 @@ func generate_terrain(terrain: Terrain) -> void:
 	if terrain == null or not is_instance_valid(terrain):
 		push_warning("Terrainy->generate_terrain: This node needs a valid Terrain to create the terrain, aborting...")
 		return
-	
-	if terrain.configuration.heightmap_image == null and not terrain.has_noise_available():
-		push_warning("Terrainy->generate_terrain: This node needs a FastNoiseLite, noise texture or heightmap image to create the terrain, aborting generation...")
-		return
 		
+	elif terrain is TerrainNoise and not terrain.validate():
+		push_warning("Terrainy->generate_terrain: The TerrainNoise needs a valid FastNoiseLite assigned in the configuration.")
+		return
+	
+	elif terrain is TerrainNoiseTexture and not terrain.validate():
+		push_warning("Terrainy->generate_terrain: The TerrainNoiseTexture needs a valid noise Texture2D assigned in the configuration.")
+		return
+	elif terrain is TerrainHeightmap and not terrain.validate():
+		push_warning("Terrainy->generate_terrain: The TerrainHeightmap needs a valid heightmap Texture2D assigned in the configuration.")
+		return
+	
 	call_thread_safe("_set_owner_to_edited_scene_root", terrain)
 	call_thread_safe("_free_children", terrain)
 	
@@ -139,168 +145,10 @@ func generate_terrain(terrain: Terrain) -> void:
 	
 
 func create_surface(terrain: Terrain) -> void:
-	var surface = SurfaceTool.new()
-	var mesh_data_tool = MeshDataTool.new()
-	
-	surface.create_from(terrain.mesh, 0)
-#
-	var array_mesh = surface.commit()
-	mesh_data_tool.create_from_surface(array_mesh, 0)
-
-	if terrain.configuration.noise:
-		if terrain.configuration.randomize_noise_seed:
-			terrain.configuration.noise.seed = randi()
-			
-		call_thread_safe("generate_heightmap_with_noise", terrain.configuration, mesh_data_tool)
-	elif terrain.configuration.noise_texture:
-		call_thread_safe("generate_heightmap_with_noise_texture", terrain.configuration, mesh_data_tool)
-	
-	elif terrain.configuration.heightmap_image:
-		call_thread_safe("generate_heightmap_from_image", terrain.configuration, mesh_data_tool)
-		
-	array_mesh.clear_surfaces()
-	mesh_data_tool.commit_to_surface(array_mesh)
-	
-	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	surface.create_from(array_mesh, 0)
-	surface.generate_normals()
-	surface.generate_tangents()
-	
-	pending_terrain_surfaces[terrain] = surface
+	pending_terrain_surfaces[terrain] = terrain.generate_surface()
 	
 	if pending_terrain_surfaces.keys().size() == terrains.size():
 		call_deferred_thread_group("emit_signal", "terrain_surfaces_finished", pending_terrain_surfaces)
-
-
-func generate_heightmap_with_noise(configuration: TerrainConfiguration, mesh_data_tool: MeshDataTool) -> void:
-	for vertex_idx: int in mesh_data_tool.get_vertex_count():
-		var vertex: Vector3 = mesh_data_tool.get_vertex(vertex_idx)
-		## Convert to a range of 0 ~ 1 instead of -1 ~ 1
-		var noise_y: float = TerrainyCore.get_noise_y_normalized(configuration.noise, vertex)
-		noise_y = apply_elevation_curve (configuration, noise_y)
-		var falloff = calculate_falloff(configuration, vertex)
-		
-		vertex.y = noise_y * configuration.max_terrain_height * falloff
-		
-		if configuration.radial_shape:
-			var radius_x: float = configuration.size_width * 0.5
-			var radius_z: float = configuration.size_depth * 0.5
-			var dist: float = Vector2(vertex.x / radius_x, vertex.z / radius_z).length()
-			var radial_mask: float = clampf(1.0 - pow(dist, configuration.radial_falloff_power), 0.0, 1.0)
-			
-			vertex.y *= radial_mask
-
-		mesh_data_tool.set_vertex(vertex_idx, vertex)
-
-	
-func generate_heightmap_with_noise_texture(configuration: TerrainConfiguration, mesh_data_tool: MeshDataTool) -> void:
-	var noise_image: Image = configuration.noise_texture.get_image()
-	var width: int = noise_image.get_width()
-	var height: int = noise_image.get_height()
-	
-	## To avoid the error "cannot get_pixel on compressed image"
-	if noise_image.is_compressed():
-		noise_image.decompress()
-	
-	for vertex_idx: int in mesh_data_tool.get_vertex_count():
-		var vertex: Vector3 = mesh_data_tool.get_vertex(vertex_idx)
-		## This operation is needed to avoid being generated symmetrically only using positive values and avoid errors when obtaining the pixel from the image
-		var x = vertex.x if vertex.x > 0 else width - absf(vertex.x)
-		var z = vertex.z if vertex.z > 0 else height - absf(vertex.z)
-		var falloff = calculate_falloff(configuration, vertex)
-		vertex.y = apply_elevation_curve(configuration, noise_image.get_pixel(x, z).r)
-		vertex.y *= configuration.max_terrain_height * falloff
-
-		if configuration.radial_shape:
-			var radius_x: float = configuration.size_width * 0.5
-			var radius_z: float = configuration.size_depth * 0.5
-			var dist: float = Vector2(vertex.x / radius_x, vertex.z / radius_z).length()
-			# falloff radial 0..1, 1 centro, 0 borde
-			var radial_mask: float = clampf(1.0 - pow(dist, configuration.radial_falloff_power), 0.0, 1.0)
-			vertex.y *= radial_mask
-		
-		mesh_data_tool.set_vertex(vertex_idx, vertex)
-
-
-func generate_heightmap_from_image(configuration: TerrainConfiguration, mesh_data_tool: MeshDataTool) -> void:
-	var heightmap_image: Image = configuration.heightmap_image.get_image()
-	
-	if heightmap_image.is_compressed():
-		heightmap_image.decompress()
-		
-	if heightmap_image.get_format() in [Image.FORMAT_RGB8, Image.FORMAT_RGBA8]:
-		heightmap_image.convert(Image.FORMAT_RF)
-	
-	var width: int = heightmap_image.get_width()
-	var height: int = heightmap_image.get_height()
-	var min_v: float = 1.0
-	var max_v: float = 0.0
-	
-	for y in range(height):
-		for x in range(width):
-			var v: float = heightmap_image.get_pixel(x, y).r
-			
-			if v < min_v: min_v = v
-			if v > max_v: max_v = v
-
-	var range_v: float = max_v - min_v
-	
-	if range_v <= 0.0001:
-		range_v = 1.0  
-
-	for vertex_idx: int in mesh_data_tool.get_vertex_count():
-		var vertex: Vector3 = mesh_data_tool.get_vertex(vertex_idx)
-		var x = clampi(int(width * (vertex.x / configuration.size_width + 0.5)), 0, width - 1)
-		var z = clampi(int(height * (vertex.z / configuration.size_depth + 0.5)), 0, height - 1)
-
-		var value: float = heightmap_image.get_pixel(x, z).r
-			
-		if configuration.auto_scale_heightmap_image:
-			value = (value - min_v) / range_v ## To apply a more precise height from this heightmap image
-		else:
-			value = clampf(value, 0.0, 1.0)
-			
-		var falloff = calculate_falloff(configuration, vertex)
-		vertex.y = apply_elevation_curve(configuration, value)
-		vertex.y *= configuration.max_terrain_height * falloff
-
-		if configuration.radial_shape:
-			var radius_x: float = configuration.size_width * 0.5
-			var radius_z: float = configuration.size_depth * 0.5
-			var dist: float = Vector2(vertex.x / radius_x, vertex.z / radius_z).length()
-			var radial_mask: float = clampf(1.0 - pow(dist, configuration.radial_falloff_power), 0.0, 1.0)
-			vertex.y *= radial_mask
-
-		mesh_data_tool.set_vertex(vertex_idx, vertex)
-
-
-func calculate_falloff(configuration: TerrainConfiguration, vertex: Vector3) -> float:
-	var falloff: float = 1.0
-	
-	if configuration.falloff_texture:
-		var falloff_image: Image = configuration.falloff_texture.get_image()
-		
-		## To avoid the error "cannot get_pixel on compressed image"
-		if falloff_image.is_compressed():
-			falloff_image.decompress()
-			
-		var x_percent: float = clampf(((vertex.x + (configuration.size_width / 2)) / configuration.size_width), 0.0, 1.0)
-		var z_percent: float = clampf(((vertex.z + (configuration.size_depth / 2)) / configuration.size_depth), 0.0, 1.0)
-		
-		var x_pixel: int = int(x_percent * (falloff_image.get_width() - 1))
-		var y_pixel: int = int(z_percent * (falloff_image.get_height() - 1))
-		
-		# In this case we can go for any channel (r,g b) as the colors are the same
-		falloff = falloff_image.get_pixel(x_pixel, y_pixel).r
-		
-	return falloff
-	
-
-func apply_elevation_curve(configuration: TerrainConfiguration, noise_y: float) -> float:
-	if configuration.elevation_curve:
-		noise_y = configuration.elevation_curve.sample(noise_y)
-	
-	return noise_y
 
 
 func set_terrain_size_on_plane_mesh(configuration: TerrainConfiguration, plane_mesh: PlaneMesh) -> void:
@@ -555,7 +403,6 @@ func _pick_weighted_grid_terrain_configuration(configurations: Dictionary[Terrai
 
 func _get_edge_vertices(mdt: MeshDataTool, edge_value: float, axis: String, return_vertices: bool = false) -> Array[Variant]:
 	var verts: Array[Variant] = []
-	
 	
 	for i: int in range(mdt.get_vertex_count()):
 		var vertex: Vector3 = mdt.get_vertex(i)
