@@ -124,9 +124,8 @@ func generate_terrain(terrain: Terrain) -> void:
 		push_warning("Terrainy->generate_terrain: This node needs a valid Terrain to create the terrain, aborting...")
 		return
 	
-	
-	if not terrain.has_noise_available():
-		push_warning("Terrainy->generate_terrain: This node needs a noise value or noise texture to create the terrain, aborting generation...")
+	if terrain.configuration.heightmap_image == null and not terrain.has_noise_available():
+		push_warning("Terrainy->generate_terrain: This node needs a FastNoiseLite, noise texture or heightmap image to create the terrain, aborting generation...")
 		return
 		
 	call_thread_safe("_set_owner_to_edited_scene_root", terrain)
@@ -155,6 +154,9 @@ func create_surface(terrain: Terrain) -> void:
 		call_thread_safe("generate_heightmap_with_noise", terrain.configuration, mesh_data_tool)
 	elif terrain.configuration.noise_texture:
 		call_thread_safe("generate_heightmap_with_noise_texture", terrain.configuration, mesh_data_tool)
+	
+	elif terrain.configuration.heightmap_image:
+		call_thread_safe("generate_heightmap_from_image", terrain.configuration, mesh_data_tool)
 		
 	array_mesh.clear_surfaces()
 	mesh_data_tool.commit_to_surface(array_mesh)
@@ -217,6 +219,54 @@ func generate_heightmap_with_noise_texture(configuration: TerrainConfiguration, 
 			var radial_mask: float = clampf(1.0 - pow(dist, configuration.radial_falloff_power), 0.0, 1.0)
 			vertex.y *= radial_mask
 		
+		mesh_data_tool.set_vertex(vertex_idx, vertex)
+
+
+func generate_heightmap_from_image(configuration: TerrainConfiguration, mesh_data_tool: MeshDataTool) -> void:
+	var heightmap_image: Image = configuration.heightmap_image.get_image()
+	
+	if heightmap_image.is_compressed():
+		heightmap_image.decompress()
+		
+	if heightmap_image.get_format() in [Image.FORMAT_RGB8, Image.FORMAT_RGBA8]:
+		heightmap_image.convert(Image.FORMAT_RF)
+	
+	var width: int = heightmap_image.get_width()
+	var height: int = heightmap_image.get_height()
+	var min_v: float = 1.0
+	var max_v: float = 0.0
+	
+	for y in range(height):
+		for x in range(width):
+			var v: float = heightmap_image.get_pixel(x, y).r
+			
+			if v < min_v: min_v = v
+			if v > max_v: max_v = v
+
+	var range_v: float = max_v - min_v
+	
+	if range_v <= 0.0001:
+		range_v = 1.0  
+
+	for vertex_idx: int in mesh_data_tool.get_vertex_count():
+		var vertex: Vector3 = mesh_data_tool.get_vertex(vertex_idx)
+		var x = clampi(int(width * (vertex.x / configuration.size_width + 0.5)), 0, width - 1)
+		var z = clampi(int(height * (vertex.z / configuration.size_depth + 0.5)), 0, height - 1)
+
+		var value: float = heightmap_image.get_pixel(x, z).r
+		value = (value - min_v) / range_v 
+		
+		var falloff = calculate_falloff(configuration, vertex)
+		vertex.y = apply_elevation_curve(configuration, value)
+		vertex.y *= configuration.max_terrain_height * falloff
+
+		if configuration.radial_shape:
+			var radius_x: float = configuration.size_width * 0.5
+			var radius_z: float = configuration.size_depth * 0.5
+			var dist: float = Vector2(vertex.x / radius_x, vertex.z / radius_z).length()
+			var radial_mask: float = clampf(1.0 - pow(dist, configuration.radial_falloff_power), 0.0, 1.0)
+			vertex.y *= radial_mask
+
 		mesh_data_tool.set_vertex(vertex_idx, vertex)
 
 

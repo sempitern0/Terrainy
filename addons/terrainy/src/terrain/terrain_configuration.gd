@@ -37,11 +37,12 @@ class_name TerrainConfiguration extends Resource
 ## Rocky: +Octaves -Period, Hills: -Octaves +Period
 @export var noise: FastNoiseLite
 ## Use a texture as noise to generate the terrain. If a noise is defined, this texture will be ignored.
-@export var noise_texture: CompressedTexture2D
+@export var noise_texture: Texture2D
+@export var heightmap_image: Texture2D
 ## Manage the maximum heights on a curve for this terrain generation
 @export var elevation_curve: Curve
 ## Use an image to smooth the edges on this terrain. Useful if you want to connect other plots of land
-@export var falloff_texture: CompressedTexture2D
+@export var falloff_texture: Texture2D
 @export_group("Mirror")
 ## Generate a mirrored terrain below the original terrain mesh
 @export var generate_mirror: bool = false
