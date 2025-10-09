@@ -39,6 +39,7 @@ class_name TerrainConfiguration extends Resource
 ## Use a texture as noise to generate the terrain. If a noise is defined, this texture will be ignored.
 @export var noise_texture: Texture2D
 @export var heightmap_image: Texture2D
+@export var auto_scale_heightmap_image: bool = true
 ## Manage the maximum heights on a curve for this terrain generation
 @export var elevation_curve: Curve
 ## Use an image to smooth the edges on this terrain. Useful if you want to connect other plots of land

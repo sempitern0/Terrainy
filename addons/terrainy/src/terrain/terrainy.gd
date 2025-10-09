@@ -254,8 +254,12 @@ func generate_heightmap_from_image(configuration: TerrainConfiguration, mesh_dat
 		var z = clampi(int(height * (vertex.z / configuration.size_depth + 0.5)), 0, height - 1)
 
 		var value: float = heightmap_image.get_pixel(x, z).r
-		value = (value - min_v) / range_v 
-		
+			
+		if configuration.auto_scale_heightmap_image:
+			value = (value - min_v) / range_v ## To apply a more precise height from this heightmap image
+		else:
+			value = clampf(value, 0.0, 1.0)
+			
 		var falloff = calculate_falloff(configuration, vertex)
 		vertex.y = apply_elevation_curve(configuration, value)
 		vertex.y *= configuration.max_terrain_height * falloff
