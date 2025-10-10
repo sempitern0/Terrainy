@@ -42,7 +42,6 @@ func generate_surface() -> SurfaceTool:
 #endregion
 
 
-
 func calculate_falloff(configuration: TerrainConfiguration, vertex: Vector3) -> float:
 	var falloff: float = 1.0
 	

@@ -14,9 +14,28 @@ enum CollisionType {
 static func get_noise_y(selected_noise: FastNoiseLite, vertex: Vector3) -> float:
 	return selected_noise.get_noise_2d(vertex.x, vertex.z)
 	
-## It normalizes the noise value from [-1.0, 1.0] to [0.0, 1.0]
+
 static func get_noise_y_normalized(selected_noise: FastNoiseLite, vertex: Vector3) -> float:
 	return (selected_noise.get_noise_2d(vertex.x, vertex.z) + 1) / 2
+
+## It takes four neighboring pixels and blends their values based on the vertex’s exact position, 
+## creating a smoother transition between each pixel on the map.
+## This doesn’t change the overall shape of the terrain, but it softens edges and small height steps.
+static func get_bilinear_height(img: Image, x: float, z: float) -> float:
+	var ix: int = clampi(int(x), 0, img.get_width() - 2)
+	var iz: int = clampi(int(z), 0, img.get_height() - 2)
+	var fx: float = _fract(x)
+	var fz: float = _fract(z)
+	
+	var a: float = img.get_pixel(ix, iz).r
+	var b: float = img.get_pixel(ix + 1, iz).r
+	var c: float = img.get_pixel(ix, iz + 1).r
+	var d: float = img.get_pixel(ix + 1, iz + 1).r
+	
+	var ab: float = lerp(a, b, fx)
+	var cd: float = lerp(c, d, fx)
+	
+	return lerp(ab, cd, fz)
 
 
 static func create_mirrored_terrain(original_terrain: Terrain) -> Terrain:
@@ -233,3 +252,9 @@ static func _add_edge(edge_map: Dictionary, a: int, b: int) -> void:
 		edge_map[key]["count"] += 1
 	else:
 		edge_map[key] = {"count": 1, "a": a, "b": b}
+
+
+static func _fract(x: float) -> float:
+	return x - floor(x)
+	
+	

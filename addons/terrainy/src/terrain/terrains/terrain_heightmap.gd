@@ -48,7 +48,7 @@ func generate_surface() -> SurfaceTool:
 		var x: int = clampi(int(width * (vertex.x / configuration.size_width + 0.5)), 0, width - 1)
 		var z: int = clampi(int(height * (vertex.z / configuration.size_depth + 0.5)), 0, height - 1)
 
-		var value: float = heightmap_image.get_pixel(x, z).r
+		var value: float = TerrainyCore.get_bilinear_height(heightmap_image, x, z)
 		
 		## To apply a more precise height from this heightmap image
 		if configuration.auto_scale_heightmap_image:
