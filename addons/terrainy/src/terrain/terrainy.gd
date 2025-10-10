@@ -36,6 +36,8 @@ var pending_terrain_surfaces: Dictionary[Terrain, SurfaceTool] = {}
 
 
 func generate_terrains(selected_terrains: Array[Terrain] = []) -> void:
+	selected_terrains = selected_terrains.filter(func(terrain: Terrain): return terrain != null)
+	
 	if selected_terrains.is_empty():
 		push_warning("Terrainy->generate_terrains: This node needs at least one Terrain to start the generation, aborting...")
 		return
