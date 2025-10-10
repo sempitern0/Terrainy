@@ -67,8 +67,18 @@ func generate_terrain_grid(terrain_grid_size: int = grid_size) -> void:
 	var grid_terrains: Array[Terrain] = []
 	
 	for index: int in terrain_grid_size:
-		var new_terrain: Terrain = Terrain.new()
-		new_terrain.configuration = _pick_weighted_grid_terrain_configuration(grid_terrain_configurations)
+		var selected_configuration: TerrainConfiguration = _pick_weighted_grid_terrain_configuration(grid_terrain_configurations)
+		var new_terrain: Terrain
+		
+		if selected_configuration is TerrainNoiseConfiguration:
+			new_terrain = TerrainNoise.new()
+		elif selected_configuration is TerrainNoiseTextureConfiguration:
+			new_terrain = TerrainNoiseTexture.new()
+		elif selected_configuration is TerrainHeightmapConfiguration:
+			new_terrain = TerrainHeightmap.new()
+		
+		new_terrain.configuration = selected_configuration
+			
 		grid_terrains.append(new_terrain)
 		grid_spawn_node.add_child(new_terrain)
 		new_terrain.position = Vector3.ZERO
