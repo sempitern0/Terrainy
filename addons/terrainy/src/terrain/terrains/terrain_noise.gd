@@ -3,6 +3,7 @@ class_name TerrainNoise extends Terrain
 
 @export var configuration: TerrainNoiseConfiguration
 
+
 func validate() -> bool:
 	return configuration.noise != null
 

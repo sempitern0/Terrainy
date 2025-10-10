@@ -11,7 +11,6 @@ const OppositeDirections: Dictionary[Vector3, Vector3] = {
 	Vector3.BACK: Vector3.FORWARD
 }
 
-
 ## To avoid update the position when it's already in a terrain grid.
 var grid_positioned: bool = false:
 	set(value):
@@ -31,7 +30,8 @@ var neighbours: Dictionary[Vector3, Terrain] = {
 
 func _enter_tree() -> void:
 	add_to_group(GroupName)
-
+	
+	
 #region Overridables
 func validate() -> bool:
 	return false
@@ -40,6 +40,8 @@ func validate() -> bool:
 func generate_surface() -> SurfaceTool:
 	return null
 #endregion
+
+
 
 func calculate_falloff(configuration: TerrainConfiguration, vertex: Vector3) -> float:
 	var falloff: float = 1.0

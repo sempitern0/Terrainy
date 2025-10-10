@@ -27,6 +27,14 @@ class_name TerrainConfiguration extends Resource
 			max_terrain_height = maxf(0.5, value)
 ## The terrain material that will be applied on the surface
 @export var terrain_material: Material
+#@export_group("LODs") ## TODO - Pending until godot provide a solution for LODs on ArrayMesh created from SurfaceTool
+#@export var generate_lods: bool = true
+### Level of details to generate, more lod count needs more initial memory (more meshes)
+#@export var lod_count: int = 2
+### Reduction factor on each level, 2 means half of the vertex from the previous lod
+#@export var lod_reduction_factor: int = 2.0
+### Step distance to camera to apply lod levels
+#@export var lod_distance_step: float = 150.0
 @export_group("Shape")
 ## Manage the maximum heights on a curve for this terrain generation
 @export var elevation_curve: Curve
