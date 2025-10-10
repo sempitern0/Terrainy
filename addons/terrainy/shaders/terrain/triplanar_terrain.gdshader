@@ -7,12 +7,14 @@ uniform float fade_range = 5.0;
 uniform float height_dirt = 5.0;
 uniform float height_grass = 15.0;
 uniform float height_mountain = 30.0;
-//uniform float roughness : hint_range(0.0, 1.0) = 1.0;
+uniform float roughness : hint_range(0.0, 1.0) = 1.0;
+uniform float metallic  : hint_range(0.0, 1.0) = 0.0;
 //uniform float ao_light_affect : hint_range(0.0, 1.0);
 
 group_uniforms Dirt;
 uniform sampler2D dirt_albedo : source_color, repeat_enable, filter_linear_mipmap, hint_default_white;
 //uniform sampler2D dirt_orm : source_color;
+uniform bool is_dirt_gradient_texture = false;
 uniform float dirt_blend_sharpness = 1.0;
 uniform float dirt_uv_scale : hint_range(0.01, 10.0, 0.01) = 1.0;
 uniform float dirt_stochastic_strength : hint_range(0.0, 1.0) = 0;
@@ -21,6 +23,7 @@ uniform float dirt_stochastic_rotation_max_angle : hint_range(0.0, 3.14159) = 0;
 group_uniforms Grass;
 uniform sampler2D grass_albedo : source_color, repeat_enable, filter_linear_mipmap, hint_default_white;
 //uniform sampler2D grass_orm : source_color;
+uniform bool is_grass_gradient_texture = false;
 uniform float grass_blend_sharpness = 1.0;
 uniform float grass_uv_scale : hint_range(0.01, 10.0, 0.01) = 1.0;
 uniform float grass_stochastic_strength : hint_range(0.0, 1.0) = 0;
@@ -29,6 +32,7 @@ uniform float grass_stochastic_rotation_max_angle : hint_range(0.0, 3.14159) = 0
 group_uniforms Mountain;
 uniform sampler2D mountain_albedo : source_color, repeat_enable, filter_linear_mipmap, hint_default_white;
 //uniform sampler2D mountain_orm : source_color;
+uniform bool is_mountain_gradient_texture = false;
 uniform float mountain_blend_sharpness = 1.0;
 uniform float mountain_uv_scale : hint_range(0.01, 10.0, 0.01) = 1.0;
 uniform float mountain_stochastic_strength : hint_range(0.0, 1.0) = 0;
@@ -96,11 +100,17 @@ vec2 stochastic_uv(vec2 uv, float strength, float max_rotation_angle) {
 // k: Triplanar blend factor (blend_factor).
 // strength: Stochastic displacement strength (stochastic_strength).
 // max_rotation_angle: Maximum random rotation angle (stochastic_rotation_max_angle).
-vec3 apply_triplanar_texture_stochastic_rgb(sampler2D tex, vec3 p, vec3 normal_abs, float k, float strength, float max_rotation_angle) {
-    // Calculate base UVs for each projection plane
+vec3 apply_triplanar_texture_stochastic_rgb(sampler2D tex, vec3 p, vec3 normal_abs, float k, float strength, float max_rotation_angle, bool gradient_texture) {
+    if (gradient_texture) {
+	    float t = clamp(p.y * 0.5 + 0.5, 0.0, 1.0);
+	    return texture(tex, vec2(t, 0.5)).rgb;
+	}
+	
+	// Calculate base UVs for each projection plane
     vec2 uv_xy = p.xy; // For Z-axis projection (top-down)
     vec2 uv_yz = p.yz; // For X-axis projection (side)
     vec2 uv_xz = p.xz; // For Y-axis projection (side)
+
 
     // --- XY Plane Projection (Z-axis) ---
     // Get the integer part of UV for a consistent random seed per tile
@@ -333,7 +343,8 @@ void fragment() {
         triplanar_normal_abs,
         blend_factor,
         dirt_stochastic_strength,
-        dirt_stochastic_rotation_max_angle
+        dirt_stochastic_rotation_max_angle,
+		is_dirt_gradient_texture
     );
 	
 	  vec3 albedo_grass = apply_triplanar_texture_stochastic_rgb(
@@ -342,7 +353,8 @@ void fragment() {
         triplanar_normal_abs,
         blend_factor,
         grass_stochastic_strength,
-        grass_stochastic_rotation_max_angle
+        grass_stochastic_rotation_max_angle,
+		is_grass_gradient_texture
     );
 
 	  vec3 albedo_mountain = apply_triplanar_texture_stochastic_rgb(
@@ -351,7 +363,8 @@ void fragment() {
         triplanar_normal_abs,
         blend_factor,
         mountain_stochastic_strength,
-        mountain_stochastic_rotation_max_angle
+        mountain_stochastic_rotation_max_angle,
+		is_mountain_gradient_texture
     );
 	
 	//vec3 orm_dirt = texture(dirt_orm, UV * dirt_uv_scale).rgb;
@@ -363,7 +376,7 @@ void fragment() {
 	//
 	ALBEDO = albedo_dirt * blend_dirt + albedo_grass * blend_grass + albedo_mountain * blend_mountain;
 	//AO = mixed_orm.r;
-	//AO_LIGHT_AFFECT = ao_light_affect;
-	//ROUGHNESS = mixed_orm.g * roughness;
-	//METALLIC = mixed_orm.b;
+	//AO_LIGHT_AFFECT = mixed_orm.g * ao_light_affect;
+	ROUGHNESS =  roughness;
+	METALLIC = metallic; // mixed_orm.b;
 }
