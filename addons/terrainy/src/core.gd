@@ -204,7 +204,7 @@ static func create_mirrored_terrain(original_terrain: Terrain) -> Terrain:
 			st.generate_tangents()
 			st.commit(mirror_array)
 
-	var mirror_terrain: Terrain = Terrain.new()
+	var mirror_terrain: Terrain = original_terrain.duplicate()
 	mirror_terrain.configuration = original_terrain.configuration
 	mirror_terrain.name = "%sMirror" % original_terrain.name
 	mirror_terrain.mesh = mirror_array
