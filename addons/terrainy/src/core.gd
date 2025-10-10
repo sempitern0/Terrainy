@@ -2,6 +2,7 @@ class_name TerrainyCore
 
 const DefaultTerrainMaterial: StandardMaterial3D = preload("uid://dnlh6yw1dkew1")
 const DefaultMirrorTerrainMaterial: StandardMaterial3D = preload("uid://8ku0pjn8b0p3")
+const DefaultMirrorNoise: FastNoiseLite = preload("uid://d0fdf4fw86ijk")
 
 
 enum CollisionType {
@@ -85,38 +86,18 @@ static func create_mirrored_terrain(original_terrain: Terrain) -> Terrain:
 			if original_terrain.configuration.mirror_noise:
 				n_offset = original_terrain.configuration.mirror_noise.get_noise_2d(v.x, v.z) * depth * 0.25
 			else:
-				var scale: float = original_terrain.configuration.mirror_vertex_scale
-				var max_amp: float = original_terrain.configuration.mirror_max_vertex_amplitude
-				var amplitude: float = minf(depth * 0.25, max_amp)
-				var base_noise: float = sin(v.x * scale + v.z * scale) * cos(v.x * scale * 0.5 + v.z * scale * 0.5)
-				n_offset = -absf(base_noise) * amplitude * 0.8
-				n_offset = clampf(n_offset, -depth * 0.9, -0.1)
-				
-				var top_y: float = top[i].y
-				var mirror_depth: float = absf(n_offset) + 0.5
-				v.y = top_y - mirror_depth 
-				
-				var prev: Vector3 = top[max(i - 1, 0)]
-				var next: Vector3 = top[min(i + 1, top.size() - 1)]
-				var neighbor_offsets: Array[Vector3] = [prev, next]
-
-				var avg_y: float = (neighbor_offsets[0].y + neighbor_offsets[1].y) * 0.5
-				var t_mix: float = clampf(10.0 / depth, 0.0, 1.0)
-				
-				n_offset = lerpf(n_offset, avg_y - top[i].y, t_mix)
-
-				for n in neighbor_offsets:
-					avg_y += n.y
-
-				avg_y /= neighbor_offsets.size()
-				n_offset = lerpf(n_offset, avg_y - top[i].y, 0.5)
-	
+				var default_mirror_noise: FastNoiseLite = DefaultMirrorNoise.duplicate()
+				default_mirror_noise.seed = randi()
+				n_offset = default_mirror_noise.get_noise_2d(v.x, v.z) * depth * 0.25
+			
 			var offset_dir: Vector3 = (normals_src[i] if i < normals_src.size() else Vector3.DOWN).normalized()
-			bottom.append(v - offset_dir * (depth + n_offset))
+			var bottom_pt: Vector3 = v - offset_dir * (depth + n_offset)
+		
+			bottom.append(bottom_pt)
 			
 			var t: float = clampf((absf(v.y) / original_terrain.configuration.max_terrain_height), 0.0, 1.0)
 			bottom_v.y = lerpf(top_v.y, bottom_v.y, pow(t, 0.6))
-		
+			
 		var combined: PackedVector3Array = PackedVector3Array()
 		combined.append_array(top)
 		combined.append_array(bottom)
@@ -218,7 +199,8 @@ static func create_mirrored_terrain(original_terrain: Terrain) -> Terrain:
 					if normals_src != null and idx < n:
 						st.set_normal(normals_src[idx]) 
 					st.add_vertex(combined[idx])
-					
+			
+	
 			st.generate_normals()
 			st.generate_tangents()
 			st.commit(mirror_array)
@@ -229,12 +211,13 @@ static func create_mirrored_terrain(original_terrain: Terrain) -> Terrain:
 	mirror_terrain.mesh = mirror_array
 	mirror_terrain.transform = original_terrain.transform
 	mirror_terrain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-
+	
+	
 	if original_terrain.configuration.mirror_material:
 		original_terrain.configuration.mirror_material.cull_mode = BaseMaterial3D.CULL_DISABLED
-		mirror_terrain.set_surface_override_material(0, original_terrain.configuration.mirror_material)
+		mirror_terrain.mesh.surface_set_material(0, original_terrain.configuration.mirror_material)
 	else:
-		mirror_terrain.set_surface_override_material(0, TerrainyCore.DefaultMirrorTerrainMaterial)
+		mirror_terrain.mesh.surface_set_material(0, TerrainyCore.DefaultMirrorTerrainMaterial)
 	
 	original_terrain.add_mirror_terrain(mirror_terrain)
 	

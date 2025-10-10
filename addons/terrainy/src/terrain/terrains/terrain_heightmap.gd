@@ -56,8 +56,16 @@ func generate_surface() -> SurfaceTool:
 		else:
 			value = clampf(value, 0.0, 1.0)
 			
-		var falloff = calculate_falloff(configuration, vertex)
-		vertex.y = apply_elevation_curve(configuration, value)
+		var falloff: float = calculate_falloff(configuration, vertex)
+		
+		## Smooth the mountain peaks to not appear so pointed and artificial
+		var smoothed_value: float = value - pow(value, 3.0) * 0.2
+		
+		if smoothed_value > 0.8:
+			var soften_factor = 1.0 - (smoothed_value - 0.8) * 2.0
+			vertex.y *= clampf(soften_factor, 0.7, 1.0)
+
+		vertex.y = apply_elevation_curve(configuration, smoothed_value)
 		vertex.y *= apply_radial_shape_on_vertex(configuration, vertex)
 		vertex.y *= configuration.max_terrain_height * falloff
 

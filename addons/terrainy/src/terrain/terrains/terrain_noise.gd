@@ -24,6 +24,7 @@ func generate_surface() -> SurfaceTool:
 		var vertex: Vector3 = mesh_data_tool.get_vertex(vertex_idx)
 		## Convert to a range of 0 ~ 1 instead of -1 ~ 1
 		var noise_y: float = TerrainyCore.get_noise_y_normalized(configuration.noise, vertex)
+		
 		noise_y = apply_elevation_curve(configuration, noise_y)
 		var falloff: float = calculate_falloff(configuration, vertex)
 		

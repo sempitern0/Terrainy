@@ -31,6 +31,7 @@ func generate_surface() -> SurfaceTool:
 		var x = vertex.x if vertex.x > 0 else width - absf(vertex.x)
 		var z = vertex.z if vertex.z > 0 else height - absf(vertex.z)
 		var falloff = calculate_falloff(configuration, vertex)
+
 		vertex.y = apply_elevation_curve(configuration, noise_image.get_pixel(x, z).r)
 		vertex.y *= configuration.max_terrain_height * falloff
 		vertex.y *= apply_radial_shape_on_vertex(configuration, vertex)
