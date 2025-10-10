@@ -7,9 +7,9 @@
    Quickly create natural-looking terrain with customizable noise parameters. This tool is designed to create simple terrains that do not require manual painting
 	<br />
 	·
-	<a href="https://github.com/ninetailsrabbit/terrainy/issues/new?assignees=ninetailsrabbit&labels=%F0%9F%90%9B+bug&projects=&template=bug_report.md&title=">Report Bug</a>
+	<a href="https://github.com/sempitern0/terrainy/issues/new?assignees=sempitern0&labels=%F0%9F%90%9B+bug&projects=&template=bug_report.md&title=">Report Bug</a>
 	·
-	<a href="https://github.com/ninetailsrabbit/terrainy/issues/new?assignees=ninetailsrabbit&labels=%E2%AD%90+feature&projects=&template=feature_request.md&title=">Request Features</a>
+	<a href="https://github.com/sempitern0/terrainy/issues/new?assignees=sempitern0&labels=%E2%AD%90+feature&projects=&template=feature_request.md&title=">Request Features</a>
   </p>
 </div>
 
@@ -20,35 +20,35 @@
   - [||`main`|`1.x`|](#main1x)
 - [Getting started 📝](#getting-started-)
   - [Terrain parameters 🗻](#terrain-parameters-)
-    - [Mesh resolution](#mesh-resolution)
-    - [Size depth](#size-depth)
-    - [Size width](#size-width)
-    - [Max terrain height](#max-terrain-height)
-    - [Terrain meshes](#terrain-meshes)
-    - [Terrain Material](#terrain-material)
+	- [Mesh resolution](#mesh-resolution)
+	- [Size depth](#size-depth)
+	- [Size width](#size-width)
+	- [Max terrain height](#max-terrain-height)
+	- [Terrain meshes](#terrain-meshes)
+	- [Terrain Material](#terrain-material)
   - [Noise parameters](#noise-parameters)
-    - [Randomize noise seed](#randomize-noise-seed)
-    - [Noise](#noise)
-    - [Noise texture](#noise-texture)
-    - [Elevation curve](#elevation-curve)
-    - [Fallof map texture](#fallof-map-texture)
-      - [Smooth edges](#smooth-edges)
-      - [Abstract Curve](#abstract-curve)
-      - [Black Holes](#black-holes)
-      - [Center Line](#center-line)
-      - [Center Soft](#center-soft)
-      - [Circle](#circle)
-      - [Inverted Circle](#inverted-circle)
-      - [Tiny Circle](#tiny-circle)
-      - [Circle Irregular](#circle-irregular)
-      - [Vertical](#vertical)
+	- [Randomize noise seed](#randomize-noise-seed)
+	- [Noise](#noise)
+	- [Noise texture](#noise-texture)
+	- [Elevation curve](#elevation-curve)
+	- [Fallof map texture](#fallof-map-texture)
+	  - [Smooth edges](#smooth-edges)
+	  - [Abstract Curve](#abstract-curve)
+	  - [Black Holes](#black-holes)
+	  - [Center Line](#center-line)
+	  - [Center Soft](#center-soft)
+	  - [Circle](#circle)
+	  - [Inverted Circle](#inverted-circle)
+	  - [Tiny Circle](#tiny-circle)
+	  - [Circle Irregular](#circle-irregular)
+	  - [Vertical](#vertical)
 - [Shader materials 🏞️](#shader-materials-️)
   - [Albedo terrain mix](#albedo-terrain-mix)
 
 # 📦 Installation
 
-1. [Download Latest Release](https://github.com/ninetailsrabbit/terrainy/releases/latest)
-2. Unpack the `addons/ninetailsrabbit.terrainy` folder into your `/addons` folder within the Godot project
+1. [Download Latest Release](https://github.com/sempitern0/terrainy/releases/latest)
+2. Unpack the `addons/sempitern0.terrainy` folder into your `/addons` folder within the Godot project
 3. Enable this addon within the Godot settings: `Project > Project Settings > Plugins`
 
 To better understand what branch to choose from for which Godot version, please refer to this table:
@@ -120,7 +120,7 @@ Play with the parameters and different types of noise to get the result you want
 
 Use a texture as noise to generate the terrain. **If a `noise` is defined, this texture will be ignored.**
 
-You can find a lot of ready noise textures inside the addon in this path `addons/ninetailsrabbit.terrainy/assets/SBS - Noise Texture Pack - 256x256` folder from [ScreamingBrainStudios](https://screamingbrai.nstudios.itch.io/noise-texture-pack)
+You can find a lot of ready noise textures inside the addon in this path `addons/sempitern0.terrainy/assets/SBS - Noise Texture Pack - 256x256` folder from [ScreamingBrainStudios](https://screamingbrai.nstudios.itch.io/noise-texture-pack)
 
 This textures are divided into categories:
 
@@ -161,61 +161,61 @@ Below I will show the images and the result of the generated plots.
 
 #### Smooth edges
 
-![smooth_edges_texture](addons/ninetailsrabbit.terrainy/assets/falloff_images/TerrainFalloff.png)
+![smooth_edges_texture](addons/sempitern0.terrainy/assets/falloff_images/TerrainFalloff.png)
 
 ![smooth_edges](images/falloff_examples/smooth_edge_example.png)
 
 #### Abstract Curve
 
-![smooth_edges_texture](addons/ninetailsrabbit.terrainy/assets/falloff_images/TerrainFallofAbstractCurve.jpg)
+![smooth_edges_texture](addons/sempitern0.terrainy/assets/falloff_images/TerrainFallofAbstractCurve.jpg)
 
 ![abstract_curve](images/falloff_examples/abstract_curve_example.png)
 
 #### Black Holes
 
-![black_holes_texture](addons/ninetailsrabbit.terrainy/assets/falloff_images/TerrainFallofBlackHoles.webp)
+![black_holes_texture](addons/sempitern0.terrainy/assets/falloff_images/TerrainFallofBlackHoles.webp)
 
 ![black_holes](images/falloff_examples/black_holes_example.png)
 
 #### Center Line
 
-![center_line_texture](addons/ninetailsrabbit.terrainy/assets/falloff_images/TerrainFallOfCenterLine.jpg)
+![center_line_texture](addons/sempitern0.terrainy/assets/falloff_images/TerrainFallOfCenterLine.jpg)
 
 ![center_line](images/falloff_examples/center_line_example.png)
 
 #### Center Soft
 
-![center_soft_texture](addons/ninetailsrabbit.terrainy/assets/falloff_images/TerrainFallOfCenterSoft.png)
+![center_soft_texture](addons/sempitern0.terrainy/assets/falloff_images/TerrainFallOfCenterSoft.png)
 
 ![center_soft](images/falloff_examples/center_soft_example.png)
 
 #### Circle
 
-![circle_texture](addons/ninetailsrabbit.terrainy/assets/falloff_images/TerrainFalloffCircle.png)
+![circle_texture](addons/sempitern0.terrainy/assets/falloff_images/TerrainFalloffCircle.png)
 
 ![circle](images/falloff_examples/falloff_circle_example.png)
 
 #### Inverted Circle
 
-![inverted_circle_texture](addons/ninetailsrabbit.terrainy/assets/falloff_images/TerrainFallofInvertedCircle.jpg)
+![inverted_circle_texture](addons/sempitern0.terrainy/assets/falloff_images/TerrainFallofInvertedCircle.jpg)
 
 ![inverted_circle](images/falloff_examples/inverted_circle_example.png)
 
 #### Tiny Circle
 
-![tiny_circle_texture](addons/ninetailsrabbit.terrainy/assets/falloff_images/TerrainFalloffCircleTiny.png)
+![tiny_circle_texture](addons/sempitern0.terrainy/assets/falloff_images/TerrainFalloffCircleTiny.png)
 
 ![tiny_circle](images/falloff_examples/falloff_circle_tiny_example.png)
 
 #### Circle Irregular
 
-![irregular_circle_texture](addons/ninetailsrabbit.terrainy/assets/falloff_images/TerrainFallofCircleIrregular.png)
+![irregular_circle_texture](addons/sempitern0.terrainy/assets/falloff_images/TerrainFallofCircleIrregular.png)
 
 ![circle_irregular](images/falloff_examples/circle_irregular_example.png)
 
 #### Vertical
 
-![vertical_texture](addons/ninetailsrabbit.terrainy/assets/falloff_images/TerrainFalloffVertical.jpg)
+![vertical_texture](addons/sempitern0.terrainy/assets/falloff_images/TerrainFalloffVertical.jpg)
 
 ![vertical](images/falloff_examples/falloff_vertical_example.png)
 
