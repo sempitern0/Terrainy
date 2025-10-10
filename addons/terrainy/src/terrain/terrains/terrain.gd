@@ -90,6 +90,7 @@ func add_mirror_terrain(mirror_terrain: Terrain) -> void:
 	mirror = mirror_terrain
 
 
+
 func assign_neighbour(neighbour_terrain: Terrain, direction: Vector3) -> bool:
 	if direction in ValidNeighboursDirections \
 		and neighbours[direction] == null \
@@ -116,4 +117,10 @@ func all_neighbours_available() -> bool:
 func neighbours_available() -> Array[Vector3]:
 	return neighbours.keys().filter(
 		func(direction: Vector3): return neighbours[direction] == null
+		)
+
+
+func filled_neighbours() -> Array[Vector3]:
+	return neighbours.keys().filter(
+		func(direction: Vector3): return neighbours[direction] != null
 		)
