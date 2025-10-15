@@ -63,10 +63,16 @@ vec2 stochastic_uv(vec2 uv, float strength, float max_angle) {
     return rotate_uv(local, angle);
 }
 
+
 vec3 triplanar_rgb(sampler2D tex, vec3 pos, vec3 normal_abs, float blend_sharpness, float strength, float max_angle, bool gradient) {
     if (gradient) {
-        float t = clamp(pos.y * 0.5 + 0.5, 0.0, 1.0);
-        return texture(tex, vec2(t, 0.5)).rgb;
+        float gradient_height = pos.y * 0.05;
+        float t = clamp(gradient_height * 0.5 + 0.5, 0.0, 1.0);
+
+        float slope_factor = 1.0 - normal_abs.y;
+        t = mix(t, 0.5, slope_factor * 0.3);
+
+        return textureLod(tex, vec2(t, 0.5), 1.5).rgb;
     }
 
     vec2 uv_xy = stochastic_uv(pos.xy, strength, max_angle);
