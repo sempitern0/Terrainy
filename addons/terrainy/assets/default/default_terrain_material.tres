@@ -3,7 +3,8 @@
 [ext_resource type="Texture2D" uid="uid://fo2osrg34rs" path="res://addons/terrainy/assets/default/checker.jpg" id="1_g4il5"]
 
 [resource]
-albedo_color = Color(0.42588738, 0.9664807, 7.70092e-07, 1)
+vertex_color_is_srgb = true
+albedo_color = Color(0.58431375, 0.9137255, 0.59607846, 1)
 albedo_texture = ExtResource("1_g4il5")
 uv1_scale = Vector3(0.5, 0.5, 0.5)
 uv1_triplanar = true

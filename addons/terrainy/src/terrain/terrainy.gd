@@ -1,28 +1,11 @@
 @tool
 class_name Terrainy extends Node
 
-signal terrain_surfaces_finished(finished_surfaces: Dictionary[Terrain, SurfaceTool])
-signal terrain_generation_finished(finished_terrains: Array[Terrain])
+signal terrain_generation_finished(terrains: Dictionary[MeshInstance3D, TerrainConfiguration])
 
-@export var button_Generate_Terrain: String
-## The target MeshInstance3D where the mesh will be generated. If no Mesh is defined, a new PlaneMesh is created instead.
-@export var terrains: Array[Terrain] = []
-@export_category("Grid")
-@export var button_Generate_Terrain_Grid: String
-@export var grid_spawn_node: Node3D
-## For better results make sure all the terrain configurations have the same depth, width and mesh resolution
-@export var grid_size: int = 8:
-	set(value):
-		grid_size = maxi(value, 2)
-@export var grid_directions: Array[Vector3] = [
-	Vector3.FORWARD,
-	Vector3.BACK,
-	Vector3.RIGHT,
-	Vector3.LEFT
-]
-## A set of terrain configurations to appear in the grid, you can configure the weight for
-## each of them to set the probability.
-@export var grid_terrain_configurations: Dictionary[TerrainConfiguration, float] = {}
+@export var button_Generate_Terrains: String
+@export var terrains: Dictionary[MeshInstance3D, TerrainConfiguration]= {}
+@export var terrain_spawn_node: Node3D
 @export_category("Navigation region")
 @export var nav_source_group_name: StringName = &"terrain_navigation_source"
 ## This navigation needs to set the value Source Geometry -> Group Explicit
@@ -32,172 +15,127 @@ signal terrain_generation_finished(finished_terrains: Array[Terrain])
 @export var bake_navigation_region_in_runtime: bool = false
 
 var thread: Thread
-var pending_terrain_surfaces: Dictionary[Terrain, SurfaceTool] = {}
+var pending_terrain_surfaces: Dictionary[MeshInstance3D, SurfaceTool] = {}
+var pending_terrains: Dictionary[MeshInstance3D, TerrainConfiguration] = {}
+
+var _threads: Array[Thread] = []
+var _started_count: int = 0
+var _finished_count: int = 0
 
 
-func generate_terrains(selected_terrains: Array[Terrain] = []) -> void:
-	selected_terrains = selected_terrains.filter(func(terrain: Terrain): return terrain != null)
+func generate_procedural_grid(size: Vector2i, config_template: TerrainConfiguration, spawn_node: Node3D = terrain_spawn_node):
+	var generated_terrains: Dictionary[MeshInstance3D, TerrainConfiguration] = {}
 	
-	if selected_terrains.is_empty():
-		push_warning("Terrainy->generate_terrains: This node needs at least one Terrain to start the generation, aborting...")
-		return
-		
-	if not terrain_surfaces_finished.is_connected(on_terrain_surfaces_finished):
-		terrain_surfaces_finished.connect(on_terrain_surfaces_finished)
-		
-	pending_terrain_surfaces.clear()
+	if spawn_node == null:
+		spawn_node = get_parent()
 	
-	print("Terrainy->generate_terrains: Generating a total of %d terrains..." % selected_terrains.size())
+	for z: int in size.y:
+		for x: int in size.x:
+			var configuration: TerrainNoiseConfiguration = config_template.duplicate()
+			var terrain_instance: MeshInstance3D = prepare_procedural_terrain(Vector2i(x, z), configuration, spawn_node)
+			generated_terrains[terrain_instance] = configuration
 	
-	var terrain_task_id: int = WorkerThreadPool.add_group_task(process_terrain_generation.bind(selected_terrains), selected_terrains.size())
-	WorkerThreadPool.wait_for_group_task_completion(terrain_task_id)
+	generate_terrains(generated_terrains, spawn_node, true)
+	
 
-
-func generate_terrain_grid(terrain_grid_size: int = grid_size) -> void:
-	terrain_grid_size = maxi(terrain_grid_size, 2)
+func prepare_procedural_terrain(grid_position: Vector2i,  terrain_configuration: TerrainConfiguration, spawn_node: Node3D) -> MeshInstance3D:
+	var terrain_instance: MeshInstance3D = MeshInstance3D.new()
 	
-	if grid_terrain_configurations.is_empty():
-		push_warning("Terrainy->generate_terrain_grid: No terrain configurations detected to generate the grid, aborting...")
-		return
-		
-	if grid_spawn_node == null:
-		push_warning("Terrainy->generate_terrain_grid: No grid spawn node detected to create the terrains, aborting...")
-		return
-		
-	var grid_terrains: Array[Terrain] = []
+	terrain_configuration.world_offset = Vector2(
+		grid_position.x * terrain_configuration.size_width, 
+		grid_position.y * terrain_configuration.size_depth
+		)
 	
-	for index: int in terrain_grid_size:
-		var selected_configuration: TerrainConfiguration = _pick_weighted_grid_terrain_configuration(grid_terrain_configurations)
-		var new_terrain: Terrain
-		
-		if selected_configuration is TerrainNoiseConfiguration:
-			new_terrain = TerrainNoise.new()
-		elif selected_configuration is TerrainNoiseTextureConfiguration:
-			new_terrain = TerrainNoiseTexture.new()
-		elif selected_configuration is TerrainHeightmapConfiguration:
-			new_terrain = TerrainHeightmap.new()
-		
-		new_terrain.configuration = selected_configuration
-			
-		grid_terrains.append(new_terrain)
-		grid_spawn_node.add_child(new_terrain)
-		new_terrain.position = Vector3.ZERO
-		new_terrain.name = "GridTerrain%d" % index
+	terrain_instance.name = "Terrain_%d_%d" % [grid_position.x, grid_position.y]
+	terrain_instance.set_meta(&"grid_position", Vector2i(grid_position))
 	
-	call_deferred("generate_terrains", grid_terrains)
-	
-	terrain_generation_finished.connect(
-		func(terrains: Array[Terrain]): 
-			if terrains.is_empty():
-				push_warning("Terrainy->generate_terrain_grid: No terrains generated for grid allocation.")
-				return
-			
-			var to_expand: Array[Terrain] = [terrains.front()]
-			var placed_terrains: Array[Terrain] = [terrains.front()]
-			var available_terrains: Array[Terrain] = terrains.filter(func(terrain: Terrain): return terrain != to_expand.front())
-
-			var count: int = 1
-			
-			while not to_expand.is_empty() and count < terrain_grid_size and available_terrains.size() > 0:
-				var current_terrain: Terrain = to_expand.pop_front()
-				
-				for direction: Vector3 in grid_directions:
-					if current_terrain.neighbours[direction] != null:
-						continue  
-					
-					if available_terrains.is_empty():
-						break
-					
-					var next_terrain: Terrain = available_terrains.pop_front()
-					var result: bool = current_terrain.assign_neighbour(next_terrain, direction)
-					
-					if result:
-						count += 1
-						call_deferred("generate_side_terrain", current_terrain, next_terrain, direction)
-						
-						to_expand.append(next_terrain)
-						placed_terrains.append(next_terrain)
-						
-						if count >= terrain_grid_size:
-							break
-				
-				if count >= terrain_grid_size:
-					break
-				
+	terrain_instance.tree_entered.connect(
+		func():
+			terrain_instance.global_position = Vector3(
+				grid_position.x * terrain_configuration.size_width, 
+				0,
+				grid_position.y * terrain_configuration.size_depth
+			)
 			, CONNECT_ONE_SHOT)
 
-
-func process_terrain_generation(index: int, terrains: Array[Terrain]) -> void:
-	generate_terrain(terrains[index])
+	terrain_instance.set_meta(&"procedural", true)
+	TerrainBuilder.add_to_grid_group(terrain_instance)
 	
+	return terrain_instance
 
-func generate_terrain(terrain: Terrain) -> void:
-	if terrain == null or not is_instance_valid(terrain):
-		push_warning("Terrainy->generate_terrain: This node needs a valid Terrain to create the terrain, aborting...")
+
+func generate_terrains(
+	selected_terrains: Dictionary[MeshInstance3D, TerrainConfiguration] = {},
+	 spawn_node: Node3D = terrain_spawn_node, 
+	procedural: bool = false) -> void:
+		
+	_threads.clear()
+	_started_count = 0
+	_finished_count = 0
+	
+	if selected_terrains.is_empty():
+		push_warning("Terrainy->generate_terrains: This node needs at least one TerrainConfiguration to start the generation, aborting...")
+		return
+	
+	for terrain_mesh in selected_terrains:
+		if not terrain_mesh.has_meta(&"procedural"):
+			terrain_mesh.set_meta(&"procedural", procedural)
+		
+		var th: Thread = Thread.new()
+		_threads.append(th)
+		_started_count += 1
+		
+		var err: Error = th.start(_terrain_worker.bind(terrain_mesh, selected_terrains[terrain_mesh], spawn_node))
+		
+		if err != OK:
+			push_error("Terrainy->generate_terrains: Could not start thread for %s (err %d | )" % [terrain_mesh.name, err, error_string(err)])
+			_started_count -= 1
+			_threads.pop_back()
+		else:
+			print("Terrainy: Terrain generation thread started for %s" % [terrain_mesh.name])
+
+
+func generate_terrain(terrain_mesh: MeshInstance3D, terrain_configuration: TerrainConfiguration, spawn_node: Node3D = terrain_spawn_node) -> void:
+	if terrain_mesh == null or not is_instance_valid(terrain_mesh):
+		push_warning("Terrainy->generate_terrain: This node needs a valid MeshInstance3D to create the terrain, aborting...")
 		return
 		
-	elif terrain is TerrainNoise and not terrain.validate():
-		push_warning("Terrainy->generate_terrain: The TerrainNoise needs a valid FastNoiseLite assigned in the configuration.")
+	elif terrain_configuration is TerrainNoiseConfiguration and not terrain_configuration.noise:
+		push_warning("Terrainy->generate_terrain: %s, TerrainNoiseConfiguration needs a valid FastNoiseLite assigned." % terrain_mesh.name)
 		return
 	
-	elif terrain is TerrainNoiseTexture and not terrain.validate():
-		push_warning("Terrainy->generate_terrain: The TerrainNoiseTexture needs a valid noise Texture2D assigned in the configuration.")
+	elif terrain_configuration is TerrainNoiseTextureConfiguration and not terrain_configuration.noise_texture:
+		push_warning("Terrainy->generate_terrain: %s, TerrainNoiseTextureConfiguration needs a valid noise Texture2D assigned." % terrain_mesh.name)
 		return
-	elif terrain is TerrainHeightmap and not terrain.validate():
-		push_warning("Terrainy->generate_terrain: The TerrainHeightmap needs a valid heightmap Texture2D assigned in the configuration.")
+	elif terrain_configuration is TerrainHeightmapConfiguration and not terrain_configuration.heightmap_image:
+		push_warning("Terrainy->generate_terrain:  %s, TerrainHeightmapConfiguration needs a valid heightmap Texture2D assigned." % terrain_mesh.name)
 		return
 	
-	call_thread_safe("_set_owner_to_edited_scene_root", terrain)
-	call_thread_safe("_free_children", terrain)
-	
-	var plane_mesh = PlaneMesh.new()
-	call_thread_safe("set_terrain_size_on_plane_mesh", terrain.configuration, plane_mesh)
-	terrain.set_deferred_thread_group("mesh", plane_mesh)
-
-	call_thread_safe("create_surface", terrain)
-	
-
-func create_surface(terrain: Terrain) -> void:
-	pending_terrain_surfaces[terrain] = terrain.generate_surface()
-	
-	if pending_terrain_surfaces.keys().size() == terrains.size():
-		call_deferred_thread_group("emit_signal", "terrain_surfaces_finished", pending_terrain_surfaces)
-
-
-func set_terrain_size_on_plane_mesh(configuration: TerrainConfiguration, plane_mesh: PlaneMesh) -> void:
-	plane_mesh.size = Vector2(configuration.size_width, configuration.size_depth)
-	plane_mesh.subdivide_depth = configuration.mesh_resolution
-	plane_mesh.subdivide_width = configuration.mesh_resolution
-	
-	if configuration.terrain_material:
-		plane_mesh.material = configuration.terrain_material
+	if terrain_mesh.is_inside_tree():
+		call_thread_safe("_free_children", terrain_mesh)
 	else:
-		plane_mesh.material = TerrainyCore.DefaultTerrainMaterial
-	
+		spawn_node.call_deferred("add_child", terrain_mesh)
 
-func generate_collisions(collision_type: TerrainyCore.CollisionType, terrain_mesh: MeshInstance3D) -> void:
-	if collision_type == TerrainyCore.CollisionType.Trimesh:
-		terrain_mesh.create_trimesh_collision()
-	elif collision_type == TerrainyCore.CollisionType.ConcavePolygon:
-		var static_body: StaticBody3D = StaticBody3D.new()
-		static_body.name = "TerrainStaticBody"
+	call_deferred_thread_group("_set_owner_to_edited_scene_root", terrain_mesh)
+	call_deferred_thread_group("create_surface", terrain_mesh, terrain_configuration)
+	call_deferred_thread_group("_terrain_worker_done", terrain_mesh)
+
+	
+func create_surface(terrain: MeshInstance3D, terrain_configuration: TerrainConfiguration) -> void:
+	var surface: SurfaceTool = TerrainBuilder.generate_surface(terrain, terrain_configuration)
+	
+	if surface == null:
+		printerr("Terrainy->create_surface: The surface created for %s is null, an error happened in the process." % terrain.name)
+		return
 		
-		var collision_shape: CollisionShape3D = CollisionShape3D.new()
-		collision_shape.name = "TerrainCollisionShape"
-		
-		var concave_shape: ConcavePolygonShape3D = ConcavePolygonShape3D.new()
-		concave_shape.set_faces(terrain_mesh.mesh.get_faces())
-		
-		collision_shape.shape = concave_shape
-		
-		static_body.call_thread_safe("add_child", collision_shape)
-		terrain_mesh.call_thread_safe("add_child", static_body)
-		call_thread_safe("_set_owner_to_edited_scene_root", static_body)
-		call_thread_safe("_set_owner_to_edited_scene_root", collision_shape)
+	pending_terrain_surfaces[terrain] = surface
+	pending_terrains[terrain] = terrain_configuration
+	
+	terrain.mesh = surface.commit()
 
 
 func create_navigation_region(selected_navigation_region: NavigationRegion3D = navigation_region) -> void:
-	if selected_navigation_region == null and create_navigation_region_in_runtime:
+	if selected_navigation_region == null:
 		selected_navigation_region = NavigationRegion3D.new()
 		selected_navigation_region.navigation_mesh = NavigationMesh.new()
 		call_thread_safe("add_child", selected_navigation_region)
@@ -215,156 +153,68 @@ func create_navigation_region(selected_navigation_region: NavigationRegion3D = n
 	
 	navigation_region = selected_navigation_region
 
-
-func generate_side_terrain(origin_terrain: Terrain, new_terrain: Terrain, direction: Vector3) -> void:
-	if origin_terrain == null or origin_terrain.mesh == null:
-		push_error("Terrainy->generate_side_terrain: origin_terrain is invalid or has no mesh.")
-		return
-	if new_terrain == null or new_terrain.mesh == null:
-		push_error("Terrainy->generate_side_terrain: new_terrain is invalid or has no mesh.")
-		return
-	if origin_terrain.mesh.get_surface_count() == 0 or new_terrain.mesh.get_surface_count() == 0:
-		push_error("Terrainy->generate_side_terrain: One of the meshes has no surfaces.")
-		return
-
-	if origin_terrain.configuration == null or new_terrain.configuration == null:
-		push_error("Terrainy->generate_side_terrain: Missing TerrainConfiguration for one of the terrains.")
-		return
-		
-	var width: int = origin_terrain.configuration.size_width
-	var depth: int = origin_terrain.configuration.size_depth
-	var resolution: int = origin_terrain.configuration.mesh_resolution
 	
-	if not new_terrain.grid_positioned:
-		new_terrain.grid_positioned = true
-		
-		var offset_local: Vector3 = Vector3.ZERO
-		
-		if abs(direction.x) > abs(direction.z):
-			offset_local.x = sign(direction.x) * width
-			
-		elif abs(direction.z) > abs(direction.x):
-			offset_local.z = sign(direction.z) * depth
-		
-		var offset_global: Vector3 = origin_terrain.global_transform.basis * offset_local
-		new_terrain.global_position = origin_terrain.global_position + offset_global
+#region Thread related
+func _finalize_threads() -> void:
+	print("Terrainy: All threads finished, finalizing (%d threads)..." % _threads.size())
 
-	var origin_st: SurfaceTool = SurfaceTool.new()
-	origin_st.create_from(origin_terrain.mesh, 0)
-	var origin_mesh: ArrayMesh = origin_st.commit()
-	var origin_mdt: MeshDataTool = MeshDataTool.new()
-	origin_mdt.create_from_surface(origin_mesh, 0)
-
-	var new_st: SurfaceTool= SurfaceTool.new()
-	new_st.create_from(new_terrain.mesh, 0)
-	var new_mesh: ArrayMesh = new_st.commit()
-	var new_mdt: MeshDataTool = MeshDataTool.new()
-	new_mdt.create_from_surface(new_mesh, 0)
-
-	var match_axis: Vector2 = Vector2.ZERO
-	var origin_edge = []
-	var new_edge = []
-
-	if abs(direction.x) > abs(direction.z):
-		match_axis = Vector2(1, 0)
+	for th in _threads:
+		th.wait_to_finish()
 		
-		if direction.x > 0:
-			origin_edge = _get_edge_vertices(origin_mdt, width * 0.5, "x", true)
-			new_edge = _get_edge_vertices(new_mdt, -width * 0.5, "x", false)
-		else:
-			origin_edge = _get_edge_vertices(origin_mdt, -width * 0.5, "x", true)
-			new_edge = _get_edge_vertices(new_mdt, width * 0.5, "x", false)
-	else:
-		match_axis = Vector2(0, 1)
+	_threads.clear()
+#	
+	for terrain_mesh: MeshInstance3D in pending_terrains:
+		var terrain_configuration: TerrainConfiguration = pending_terrains[terrain_mesh]
 		
-		if direction.z > 0:
-			origin_edge = _get_edge_vertices(origin_mdt, depth * 0.5, "z", true)
-			new_edge = _get_edge_vertices(new_mdt, -depth * 0.5, "z", false)
-		else:
-			origin_edge = _get_edge_vertices(origin_mdt, -depth * 0.5, "z", true)
-			new_edge = _get_edge_vertices(new_mdt, depth * 0.5, "z", false)
+		terrain_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		
+		TerrainBuilder.add_to_group(terrain_mesh)
+		
+		if not terrain_mesh.get_meta(&"procedural"):
+			TerrainBuilder.center_terrain_mesh_to_node_world_position_y(terrain_mesh)
 	
-	if origin_edge.size() == new_edge.size():
-		for i in range(origin_edge.size()):
-			var origin_v = origin_edge[i]
-			var new_idx = new_edge[i]
-			var new_v: Vector3 = new_mdt.get_vertex(new_idx)
-			new_v.y = origin_v.y
-			new_mdt.set_vertex(new_idx, new_v)
+		if terrain_configuration.generate_collision:
+			TerrainBuilder.regenerate_terrain_collision(terrain_mesh)
+		
+		if terrain_configuration.generate_mirror:
+			var mirror_terrain: MeshInstance3D = TerrainBuilder.create_mirrored_terrain(terrain_mesh, terrain_configuration)
 			
-	var blend_width: int = 3  
-	var blend_axis: String = ""
-	var sign_dir: float = 1.0
-
-	if abs(direction.x) > abs(direction.z):
-		blend_axis = "x"
-		sign_dir = sign(direction.x)
-	else:
-		blend_axis = "z"
-		sign_dir = sign(direction.z)
-
-	for i in range(new_mdt.get_vertex_count()):
-		var v: Vector3 = new_mdt.get_vertex(i)
-		var distance_from_edge: float = 0.0
-
-		if blend_axis == "x":
-			var edge_pos: float = (-width * 0.5) if (sign_dir > 0) else (width * 0.5)
-			distance_from_edge = abs(v.x - edge_pos) / (width / float(resolution))
-		else:
-			var edge_pos: float = (-depth * 0.5) if (sign_dir > 0) else (depth * 0.5)
-			distance_from_edge = abs(v.z - edge_pos) / (depth / float(resolution))
-
-		if distance_from_edge > 0 and distance_from_edge <= blend_width:
-			var t: float = 1.0 - (distance_from_edge / float(blend_width))
-			var nearest_edge_height: float = 0.0
+			terrain_mesh.call_deferred("add_child", mirror_terrain)
+			call_deferred("_set_owner_to_edited_scene_root", mirror_terrain)
 			
-			if origin_edge.size() > 0:
-				var avg_height := 0.0
+			mirror_terrain.set_deferred("global_transform", terrain_mesh.global_transform)
+			
+			if terrain_configuration.generate_mirror_collision:
+				TerrainBuilder.regenerate_terrain_collision(mirror_terrain)
 				
-				for e in origin_edge:
-					avg_height += e.y
-				nearest_edge_height = avg_height / float(origin_edge.size())
-
-			v.y = lerp(v.y, nearest_edge_height, t * 0.5)
-			new_mdt.set_vertex(i, v)
-
-	new_mesh.clear_surfaces()
-	new_mdt.commit_to_surface(new_mesh)
-
-	var st_final: SurfaceTool = SurfaceTool.new()
-	st_final.begin(Mesh.PRIMITIVE_TRIANGLES)
-	st_final.create_from(new_mesh, 0)
-	st_final.generate_normals()
-	st_final.generate_tangents()
-	new_terrain.mesh = st_final.commit()
-
-
-func on_terrain_surfaces_finished(terrain_surfaces: Dictionary[Terrain, SurfaceTool]) -> void:
-	print("Terrainy: Generation of %d terrain surfaces is finished! " % terrain_surfaces.size())
-	
-	for terrain: Terrain in terrain_surfaces:
-		terrain.mesh = terrain_surfaces[terrain].commit() 
-		terrain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		terrain.add_to_group(nav_source_group_name)
-		
-		if terrain.configuration.generate_mirror:
-			var mirror_terrain: Terrain = TerrainyCore.create_mirrored_terrain(terrain)
-			terrain.call_thread_safe("add_mirror_terrain", mirror_terrain)
+			TerrainBuilder.add_to_mirror_group(mirror_terrain)
 			
-			if mirror_terrain:
-				terrain.call_thread_safe("add_child", mirror_terrain)
-				call_thread_safe("_set_owner_to_edited_scene_root", mirror_terrain)
-				terrain.mirror.global_transform = terrain.global_transform
+			if create_navigation_region_in_runtime:
+				create_navigation_region(navigation_region)
 				
-				generate_collisions(terrain.configuration.mirror_collision_type, mirror_terrain)
 				
-		generate_collisions(terrain.configuration.collision_type, terrain)
-		
-	create_navigation_region(navigation_region)
+	terrain_generation_finished.emit(pending_terrains)
+	pending_terrain_surfaces.clear()
+	pending_terrains.clear()
 	
-	terrain_generation_finished.emit(terrain_surfaces.keys())
-		
+	print("Terrainy: Generation complete.")
 
+
+func _terrain_worker(target_mesh: MeshInstance3D, terrain_configuration: TerrainConfiguration, spawn_node: Node3D = terrain_spawn_node) -> void:
+	if target_mesh == null or not is_instance_valid(target_mesh):
+		push_warning("Terrainy->_terrain_worker: This node needs a valid MeshInstance3D to create the terrain, aborting...")
+		return
+		
+	call_thread_safe("generate_terrain", target_mesh, terrain_configuration, spawn_node)
+
+
+func _terrain_worker_done(terrain: MeshInstance3D) -> void:
+	_finished_count += 1
+	
+	if _finished_count >= _started_count:
+		_finalize_threads()
+		
+		
 #region Helpers
 func _set_owner_to_edited_scene_root(node: Node) -> void:
 	if Engine.is_editor_hint():
@@ -384,55 +234,6 @@ func _free_children(node: Node) -> void:
 
 func _on_tool_button_pressed(text: String) -> void:
 	match text:
-		"Generate Terrain":
+		"Generate Terrains":
 			generate_terrains(terrains)
-		"Generate Terrain Grid":
-			generate_terrain_grid(grid_size)
-
-
-func _pick_weighted_grid_terrain_configuration(configurations: Dictionary[TerrainConfiguration, float] = grid_terrain_configurations) -> TerrainConfiguration:
-	if configurations.is_empty():
-		return null
-		
-	if configurations.size() == 1:
-		return configurations.keys().front()
-	
-	var total_weight: float = 0.0
-	
-	for weight: float in configurations.values():
-		total_weight += weight
-
-	var random: float = randf() * total_weight
-	var accumulative: float = 0.0
-	
-	for config: TerrainConfiguration in configurations.keys():
-		accumulative += configurations[config]
-		
-		if random <= accumulative:
-			return config
-	
-	# Fallback (por si acaso)
-	return configurations.keys()[0]
-
-
-func _get_edge_vertices(mdt: MeshDataTool, edge_value: float, axis: String, return_vertices: bool = false) -> Array[Variant]:
-	var verts: Array[Variant] = []
-	
-	for i: int in range(mdt.get_vertex_count()):
-		var vertex: Vector3 = mdt.get_vertex(i)
-		
-		if axis == "x":
-			if is_equal_approx(vertex.x, edge_value):
-				if return_vertices:
-					verts.append(vertex)
-				else:
-					verts.append(i)
-		elif axis == "z":
-			if is_equal_approx(vertex.z, edge_value):
-				if return_vertices:
-					verts.append(vertex)
-				else:
-					verts.append(i)
-					
-	return verts
 #endregion

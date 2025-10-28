@@ -16,7 +16,7 @@ config/terrainy/update_notification_enabled=true
 
 config/name="Terrainy"
 config/description="Quickly create natural-looking terrain with customizable noise parameters. This tool is designed to create simple terrains that do not require manual painting."
-config/version="1.4.0"
+config/version="1.5.0"
 config/features=PackedStringArray("4.5", "GL Compatibility")
 config/icon="res://icon.svg"
 

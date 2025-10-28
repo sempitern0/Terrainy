@@ -16,9 +16,9 @@ func _init(obj: Object, text:String):
 	var emoji: String = ""
 	
 	match text:
-		"Generate Terrain":
+		"Generate Terrains":
 			emoji = "⛰️"
-		"Generate Terrain Grid":
+		"Generate Procedural Terrain":
 			emoji = "🧮"
 			
 	button.size_flags_horizontal = SIZE_EXPAND_FILL
