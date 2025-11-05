@@ -281,7 +281,7 @@ static func apply_radial_shape_on_vertex(configuration: TerrainConfiguration, ve
 
 
 static func regenerate_terrain_collision(terrain_mesh: MeshInstance3D) -> void:
-	for body: StaticBody3D in OmniKitNodeTraversal.find_nodes_of_type(terrain_mesh, StaticBody3D.new()):
+	for body: StaticBody3D in _find_nodes_of_type(terrain_mesh, StaticBody3D.new()):
 		body.queue_free()
 		
 	terrain_mesh.create_trimesh_collision()
@@ -539,3 +539,18 @@ static func _add_edge(edge_map: Dictionary, a: int, b: int) -> void:
 
 static func _fract(x: float) -> float:
 	return x - floor(x)
+
+
+
+static func _find_nodes_of_type(node: Node, type_to_find: Node) -> Array:
+	var  result := []
+	
+	var childrens = node.get_children(true)
+
+	for child: Node  in childrens:
+		if child.is_class(type_to_find.get_class()):
+			result.append(child)
+		else:
+			result.append_array(_find_nodes_of_type(child, type_to_find))
+	
+	return result
