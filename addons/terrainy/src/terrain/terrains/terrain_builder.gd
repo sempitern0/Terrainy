@@ -541,7 +541,8 @@ static func _fract(x: float) -> float:
 	return x - floor(x)
 
 
-
+## Only works for native nodes like Area2D, Camera2D, etc.
+## Example NodePositioner.find_nodes_of_type(self, Control.new())
 static func _find_nodes_of_type(node: Node, type_to_find: Node) -> Array:
 	var  result := []
 	

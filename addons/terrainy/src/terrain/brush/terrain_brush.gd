@@ -1,7 +1,6 @@
 ## Brush to modify the terrain on runtime
 class_name TerrainBrush extends Node3D
 
-
 @export var origin_camera: Camera3D:
 	set(new_camera):
 		origin_camera = new_camera
@@ -49,15 +48,18 @@ var last_terrain: MeshInstance3D
 var current_paint_color_channel: Color = Color.RED
 
 
-func _unhandled_input(_event: InputEvent) -> void:
-	painting = InputMap.has_action(&"paint_terrain") and Input.is_action_pressed(&"paint_terrain")
+func _unhandled_input(event: InputEvent) -> void:
+	painting = event is InputEventMouse and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)
+
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
+		if current_mode == Modes.RaiseTerrain:
+			change_mode_to_lower_terrain()
+		else:
+			change_mode_to_raise_terrain()
 	
-	#if OmniKitInputHelper.action_just_pressed_and_exists(InputControls.Aim):
-		#if current_mode == Modes.RaiseTerrain:
-			#change_mode_to_lower_terrain()
-		#else:
-			#change_mode_to_raise_terrain()
-	#
+	#if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
+		#current_paint_color_channel = [Color.WEB_GREEN, Color.BLUE_VIOLET].pick_random()
+
 
 func _ready() -> void:
 	set_process(origin_camera != null)
@@ -71,7 +73,7 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
-		var result: TerrainRaycastResult = project_raycast_to_mouse(origin_camera, 200.0)
+		var result: BrushRaycastResult = project_raycast_to_mouse(origin_camera, 200.0, 1)
 		
 		if result.position and result.collider:
 			if visual_brush_decal:
@@ -227,14 +229,14 @@ func change_mode_to_lower_terrain() -> void:
 	change_mode_to(Modes.LowerTerrain)
 
 
-func project_raycast(
+static func project_raycast(
 	viewport: Viewport,
 	from: Vector3,
 	to: Vector3,
 	collide_with_bodies: bool = true,
 	collide_with_areas: bool = false,
 	collision_mask: int = 1
-) -> TerrainRaycastResult:
+) -> BrushRaycastResult:
 	
 	var ray_query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(
 		from, 
@@ -247,8 +249,8 @@ func project_raycast(
 
 	var result: Dictionary = (viewport.get_camera_3d().get_world_3d() if viewport is SubViewport else viewport.get_world_3d()).direct_space_state.intersect_ray(ray_query)
 
-	return TerrainRaycastResult.new(result)
-
+	return BrushRaycastResult.new(result)
+	
 	
 func project_raycast_to_mouse(
 	camera: Camera3D,
@@ -256,7 +258,7 @@ func project_raycast_to_mouse(
 	collide_with_bodies: bool = true,
 	collide_with_areas: bool = false,
 	collision_mask: int = 1
-) -> TerrainRaycastResult:
+) -> BrushRaycastResult:
 	
 	var viewport: Viewport = camera.get_viewport()
 	var mouse_position: Vector2 = viewport.get_mouse_position()

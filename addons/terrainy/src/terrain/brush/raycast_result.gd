@@ -1,4 +1,4 @@
-class_name TerrainRaycastResult extends RefCounted
+class_name BrushRaycastResult extends RefCounted
 
 var collider: Node
 var collider_id: int
@@ -18,14 +18,21 @@ var property_keys: Array[String] = [
 	"rid"
 ]
 
-func _init(hitscan_result: Dictionary) -> void:
+func _init(result: Dictionary) -> void:
 	for key: String in property_keys:
-		if hitscan_result.has(key):
-			self[key] = hitscan_result[key]
+		if result.has(key):
+			self[key] = result[key]
 
 
 func collided() -> bool:
 	return collider != null
+	
+
+func projection(origin: Vector3, to: Vector3 = position, distance: float = 100.0) -> Vector3:
+	if normal.is_zero_approx():
+		return origin.direction_to(to) * distance
+	
+	return origin * normal * distance
 	
 	
 func as_dict() -> Dictionary:

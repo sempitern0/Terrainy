@@ -5,7 +5,7 @@ signal terrain_generation_finished(terrains: Dictionary[MeshInstance3D, TerrainC
 
 @export var button_Generate_Terrains: String
 @export var terrains: Dictionary[MeshInstance3D, TerrainConfiguration]= {}
-@export var terrain_spawn_node: Node3D
+@export var procedural_terrain_spawn_node: Node3D
 @export_category("Navigation region")
 @export var nav_source_group_name: StringName = &"terrain_navigation_source"
 ## This navigation needs to set the value Source Geometry -> Group Explicit
@@ -23,7 +23,7 @@ var _started_count: int = 0
 var _finished_count: int = 0
 
 
-func generate_procedural_grid(size: Vector2i, config_template: TerrainConfiguration, spawn_node: Node3D = terrain_spawn_node):
+func generate_procedural_grid(size: Vector2i, config_template: TerrainConfiguration, spawn_node: Node3D = procedural_terrain_spawn_node):
 	var generated_terrains: Dictionary[MeshInstance3D, TerrainConfiguration] = {}
 	
 	if spawn_node == null:
@@ -66,7 +66,7 @@ func prepare_procedural_terrain(grid_position: Vector2i,  terrain_configuration:
 
 func generate_terrains(
 	selected_terrains: Dictionary[MeshInstance3D, TerrainConfiguration] = {},
-	 spawn_node: Node3D = terrain_spawn_node, 
+ 	spawn_node: Node3D = procedural_terrain_spawn_node, 
 	procedural: bool = false) -> void:
 		
 	_threads.clear()
@@ -95,7 +95,7 @@ func generate_terrains(
 			print("Terrainy: Terrain generation thread started for %s" % [terrain_mesh.name])
 
 
-func generate_terrain(terrain_mesh: MeshInstance3D, terrain_configuration: TerrainConfiguration, spawn_node: Node3D = terrain_spawn_node) -> void:
+func generate_terrain(terrain_mesh: MeshInstance3D, terrain_configuration: TerrainConfiguration, spawn_node: Node3D = procedural_terrain_spawn_node) -> void:
 	if terrain_mesh == null or not is_instance_valid(terrain_mesh):
 		push_warning("Terrainy->generate_terrain: This node needs a valid MeshInstance3D to create the terrain, aborting...")
 		return
@@ -200,7 +200,7 @@ func _finalize_threads() -> void:
 	print("Terrainy: Generation complete.")
 
 
-func _terrain_worker(target_mesh: MeshInstance3D, terrain_configuration: TerrainConfiguration, spawn_node: Node3D = terrain_spawn_node) -> void:
+func _terrain_worker(target_mesh: MeshInstance3D, terrain_configuration: TerrainConfiguration, spawn_node: Node3D = procedural_terrain_spawn_node) -> void:
 	if target_mesh == null or not is_instance_valid(target_mesh):
 		push_warning("Terrainy->_terrain_worker: This node needs a valid MeshInstance3D to create the terrain, aborting...")
 		return

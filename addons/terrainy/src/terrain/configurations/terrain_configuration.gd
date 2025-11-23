@@ -1,10 +1,10 @@
 @tool
 class_name TerrainConfiguration extends Resource
 
-@export var world_offset: Vector2 = Vector2.ZERO
 @export var id: StringName
 @export var name: StringName
 @export_multiline var description: String
+@export var world_offset: Vector2 = Vector2.ZERO
 ## More resolution means more detail (more dense vertex) in the terrain generation, this increases the mesh subdivisions it could reduce the performance in low-spec pcs
 @export_range(2, 2048, 2) var mesh_resolution: int = 64
 ## The depth size of the mesh (z) in godot units (meters)
