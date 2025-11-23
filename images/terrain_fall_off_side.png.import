@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dkyxhmto448xc"
-path="res://.godot/imported/circle_irregular_example.png-78a96286cee3c71771e50e7fd15c841c.ctex"
+uid="uid://dbabp5l2kji8l"
+path="res://.godot/imported/terrain_fall_off_side.png-ed7ac2b6be80db44a7f37fa56041aeb6.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://images/falloff_examples/circle_irregular_example.png"
-dest_files=["res://.godot/imported/circle_irregular_example.png-78a96286cee3c71771e50e7fd15c841c.ctex"]
+source_file="res://images/terrain_fall_off_side.png"
+dest_files=["res://.godot/imported/terrain_fall_off_side.png-ed7ac2b6be80db44a7f37fa56041aeb6.ctex"]
 
 [params]
 

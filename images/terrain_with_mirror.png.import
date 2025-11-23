@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bwhtgpmu2pnea"
-path="res://.godot/imported/falloff_circle_example.png-6e26c7f8278d27ec507cbb6be076f1de.ctex"
+uid="uid://roqd56clyrv1"
+path="res://.godot/imported/terrain_with_mirror.png-926f3f6c3557d966f45baaad8a398046.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://images/falloff_examples/falloff_circle_example.png"
-dest_files=["res://.godot/imported/falloff_circle_example.png-6e26c7f8278d27ec507cbb6be076f1de.ctex"]
+source_file="res://images/terrain_with_mirror.png"
+dest_files=["res://.godot/imported/terrain_with_mirror.png-926f3f6c3557d966f45baaad8a398046.ctex"]
 
 [params]
 

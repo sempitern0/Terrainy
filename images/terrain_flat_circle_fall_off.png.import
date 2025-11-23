@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bmslbm1ehec1"
-path="res://.godot/imported/inverted_circle_example.png-23ce844ea1a4c86d365c68317ddfecbb.ctex"
+uid="uid://drgwmdp1vitrb"
+path="res://.godot/imported/terrain_flat_circle_fall_off.png-2198e8b31856386c9d97b59c250247eb.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://images/falloff_examples/inverted_circle_example.png"
-dest_files=["res://.godot/imported/inverted_circle_example.png-23ce844ea1a4c86d365c68317ddfecbb.ctex"]
+source_file="res://images/terrain_flat_circle_fall_off.png"
+dest_files=["res://.godot/imported/terrain_flat_circle_fall_off.png-2198e8b31856386c9d97b59c250247eb.ctex"]
 
 [params]
 

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://oc5lh4rw23en"
-path="res://.godot/imported/island_example.png-eba925422ab916452878b9035d334d68.ctex"
+uid="uid://go4geq2i2xvg"
+path="res://.godot/imported/terrain_center_line_vertical_fall_off.png-3e04e6c4be1ca28d17125da0373e1abb.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://images/falloff_examples/island_example.png"
-dest_files=["res://.godot/imported/island_example.png-eba925422ab916452878b9035d334d68.ctex"]
+source_file="res://images/terrain_center_line_vertical_fall_off.png"
+dest_files=["res://.godot/imported/terrain_center_line_vertical_fall_off.png-3e04e6c4be1ca28d17125da0373e1abb.ctex"]
 
 [params]
 

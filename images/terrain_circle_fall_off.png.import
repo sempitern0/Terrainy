@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://eqdcxuevm6on"
-path="res://.godot/imported/center_line_vertical_example.png-9c91cc1cea9222f37ccdba7979296e80.ctex"
+uid="uid://cc28pqo8ji8m1"
+path="res://.godot/imported/terrain_circle_fall_off.png-94b3ebdaa7b116f27c618ae8ad8cc565.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://images/falloff_examples/center_line_vertical_example.png"
-dest_files=["res://.godot/imported/center_line_vertical_example.png-9c91cc1cea9222f37ccdba7979296e80.ctex"]
+source_file="res://images/terrain_circle_fall_off.png"
+dest_files=["res://.godot/imported/terrain_circle_fall_off.png-94b3ebdaa7b116f27c618ae8ad8cc565.ctex"]
 
 [params]
 

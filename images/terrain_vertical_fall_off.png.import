@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://u03lgii31rvl"
-path="res://.godot/imported/abstract_curve_example.png-684fec4b6e48b56dd750363295a87733.ctex"
+uid="uid://co2iguern3x1j"
+path="res://.godot/imported/terrain_vertical_fall_off.png-fa73cab39cc3a6b901f54c8c5bf0a90c.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://images/falloff_examples/abstract_curve_example.png"
-dest_files=["res://.godot/imported/abstract_curve_example.png-684fec4b6e48b56dd750363295a87733.ctex"]
+source_file="res://images/terrain_vertical_fall_off.png"
+dest_files=["res://.godot/imported/terrain_vertical_fall_off.png-fa73cab39cc3a6b901f54c8c5bf0a90c.ctex"]
 
 [params]
 

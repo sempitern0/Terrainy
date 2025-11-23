@@ -21,7 +21,7 @@
 - [Getting started 📝](#getting-started-)
 	- [Editor](#editor)
 	- [Runtime](#runtime)
-- [Configuration](#configuration)
+- [Parameters](#parameters)
 - [TerrainConfiguration](#terrainconfiguration)
 	- [Common configuration parameters](#common-configuration-parameters)
 		- [ID](#id)
@@ -56,6 +56,22 @@
 	- [TerrainHeightmapConfiguration](#terrainheightmapconfiguration)
 		- [Heightmap image](#heightmap-image)
 		- [Auto scale](#auto-scale)
+- [Generation examples](#generation-examples)
+	- [Mirror terrain](#mirror-terrain-1)
+	- [Fall off textures](#fall-off-textures)
+		- [Abstract curve](#abstract-curve)
+		- [Black holes](#black-holes)
+		- [Center line](#center-line)
+		- [Center soft](#center-soft)
+		- [Circle irregular](#circle-irregular)
+		- [Smooth borders *(Island edges)*](#smooth-borders-island-edges)
+		- [Center line vertical](#center-line-vertical)
+		- [Circle](#circle)
+		- [Circle flat](#circle-flat)
+		- [Vertical](#vertical)
+		- [Inverted circle](#inverted-circle)
+		- [Square flow *(similar results like inverted circle)*](#square-flow-similar-results-like-inverted-circle)
+- [Terrain shader](#terrain-shader)
 - [Procedural terrain *(Work in progress)*](#procedural-terrain-work-in-progress)
 - [Runtime Brush *(Work in progress)*](#runtime-brush-work-in-progress)
 
@@ -92,7 +108,7 @@ func generate_terrains(
 	procedural: bool = false) -> void
 ```
 
-# Configuration
+# Parameters
 The image below illustrates the parameters you can configure for terrain generation:
 
 - - -
@@ -206,6 +222,101 @@ A valid heightmap image on black white pattern that represents a shaped terrain.
 
 ### Auto scale
 Auto scale the correct height from the heightmap for a more accurate result.
+
+
+# Generation examples
+
+## Mirror terrain
+![terrain_simple](images/terrain_no_mirror.png)
+
+
+**With `generate_mirror` enabled on configuration**
+
+![terrain_simple](images/terrain_with_mirror.png)
+
+
+## Fall off textures
+The following terrain images were captured generating a terrain using `TerrainNoiseConfiguration` with Perlin noise with a frequency of `0.005` and the following elevation curve:
+
+
+![elevation_curve](images/elevation_curve.png)
+
+- - -
+
+### Abstract curve
+
+![abstract_curve_fall_off](images/terrain_abstract_fall_off.png)
+
+- - -
+
+### Black holes
+
+![black_hole_fall_off](images/terrain_black_hole_fall_off.png)
+
+- - -
+
+### Center line
+
+![center_line_fall_off](images/terrain_center_line_fall_off.png)
+
+
+- - -
+
+### Center soft
+
+![center_soft_fall_off](images/terrain_center_soft_fall_off.png)
+
+- - -
+
+### Circle irregular
+
+![center_soft_fall_off](images/terrain_circle_irregular_fall_off.png)
+
+- - -
+
+### Smooth borders *(Island edges)*
+
+![fall_off_side](images/terrain_fall_off_side.png)
+
+- - -
+
+### Center line vertical
+
+![center_line_vertical_fall_off](images/terrain_center_line_vertical_fall_off.png)
+
+- - -
+
+### Circle
+
+![circle_fall_off](images/terrain_circle_fall_off.png)
+
+- - -
+
+### Circle flat
+
+![circle_flat_fall_off](images/terrain_flat_circle_fall_off.png)
+
+- - -
+
+### Vertical
+
+![vertical_fall_off](images/terrain_vertical_fall_off.png)
+
+- - -
+
+### Inverted circle
+
+![inverted_circle_fall_off](images/terrain_inverted_circle_fall_off.png)
+
+- - -
+
+### Square flow *(similar results like inverted circle)*
+
+![square_flow_fall_off](images/terrain_square_flow_fall_off.png)
+
+
+# Terrain shader
+
 
 
 # Procedural terrain *(Work in progress)*

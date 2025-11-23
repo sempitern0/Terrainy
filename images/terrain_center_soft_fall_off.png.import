@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b5h1ftfyhabnj"
-path="res://.godot/imported/black_holes_example.png-d00aff17b27757d2121f712761fe3b7c.ctex"
+uid="uid://d1m4o6ciq0u3e"
+path="res://.godot/imported/terrain_center_soft_fall_off.png-9d2be46161a18ef98c16aab0b20b5a6c.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://images/falloff_examples/black_holes_example.png"
-dest_files=["res://.godot/imported/black_holes_example.png-d00aff17b27757d2121f712761fe3b7c.ctex"]
+source_file="res://images/terrain_center_soft_fall_off.png"
+dest_files=["res://.godot/imported/terrain_center_soft_fall_off.png-9d2be46161a18ef98c16aab0b20b5a6c.ctex"]
 
 [params]
 

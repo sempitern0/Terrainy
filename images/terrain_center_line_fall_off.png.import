@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://sailawcsyrud"
-path="res://.godot/imported/center_soft_example.png-f0edc2f1821d5abeed80352c91714e7a.ctex"
+uid="uid://d2f7i2b78p5q5"
+path="res://.godot/imported/terrain_center_line_fall_off.png-97e12c48c2f6a3657ed42a4856ccdac3.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://images/falloff_examples/center_soft_example.png"
-dest_files=["res://.godot/imported/center_soft_example.png-f0edc2f1821d5abeed80352c91714e7a.ctex"]
+source_file="res://images/terrain_center_line_fall_off.png"
+dest_files=["res://.godot/imported/terrain_center_line_fall_off.png-97e12c48c2f6a3657ed42a4856ccdac3.ctex"]
 
 [params]
 
