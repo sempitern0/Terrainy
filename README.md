@@ -334,14 +334,16 @@ The following terrain images were captured generating a terrain using `TerrainNo
 # Terrain shaders
 This addon provides multiple shaders to achieve terrain texturing based on **world height** and **triplanar mapping**, designed to avoid visible UV seams and texture stretching. 
 
-They are located in `res://addons/terrainy/shaders/terrain`
+All shaders are located at: `res://addons/terrainy/shaders/terrain`
 
-To use them just create a new `ShaderMaterial`, assign the desired shader and set this material into the `MeshInstance3D` where the terrain mesh was generated.
+1. Create a new `ShaderMaterial`
+2. Assign the desired shader
+3. Apply the material to the `MeshInstance3D` that contains your terrain mesh
 
 ## Triplanar terrain
 The shader `triplanar_terrain.gdshader` projects textures in **three axes (X/Y/Z)** and blends them based on surface normals. It eliminates visible seams and UV stretching.
 
-There are few terrain textures to test located on `res://addons/terrainy/shaders/terrain`
+A small set of test terrain textures is included at: `res://addons/terrainy/shaders/terrain`
 
 
 ![triplanar_terrain](images/triplanar_terrain.png)
@@ -351,19 +353,21 @@ There are few terrain textures to test located on `res://addons/terrainy/shaders
 ## Triplanar gradient terrain
 This shader `triplanar_gradient_terrain.gdshader`  variant replaces texture-based blending with **smooth gradient transitions** that uses `GradientTexture2D`, useful for stylized terrain or color-based materials for low-poly environments. This shader ensures visually clean gradients even on high resolution meshes.
 
-There are few premade gradients that can be found on `res://addons/terrainy/shaders/terrain/gradients`
+Several pre-made gradients can be found at: `res://addons/terrainy/shaders/terrain/gradients`
 
 
 ![triplanar_gradient_terrain](images/terrain_gradient.png)
 
 
-
 ## Water
-A modified version of the original water shader from [LesusX](https://github.com/LesusX/YouTube/blob/main/WaterShader/water.gdshader). The material can be found in `res://addons/terrainy/shaders/terrain/water/ocean_water.tres` and is ready to go.
+A modified version of the original water shader from [LesusX](https://github.com/LesusX/YouTube/blob/main/WaterShader/water.gdshader). 
 
+A ready-to-use material is included at: `res://addons/terrainy/shaders/terrain/water/ocean_water.tres` 
 
-To use this material just assign it into a new `MeshInstance3D` with a `PlaneMesh` or `QuadMesh`. 
-
+1. Create a new `MeshInstance3D`
+2. Assign a `PlaneMesh` or `QuadMesh`
+3. Apply the provided water material
+4. Set the mesh size, it's recommended to have at least subdivisions from 100 for better detail.
 
 ![water_parameters](images/water_parameters.png)
 
