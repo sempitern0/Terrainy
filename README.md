@@ -56,6 +56,7 @@
 	- [TerrainHeightmapConfiguration](#terrainheightmapconfiguration)
 		- [Heightmap image](#heightmap-image)
 		- [Auto scale](#auto-scale)
+		- [Example](#example)
 - [Generation examples](#generation-examples)
 	- [Mirror terrain](#mirror-terrain-1)
 	- [Fall off textures](#fall-off-textures)
@@ -71,7 +72,10 @@
 		- [Vertical](#vertical)
 		- [Inverted circle](#inverted-circle)
 		- [Square flow *(similar results like inverted circle)*](#square-flow-similar-results-like-inverted-circle)
-- [Terrain shader](#terrain-shader)
+- [Terrain shaders](#terrain-shaders)
+	- [Triplanar terrain](#triplanar-terrain)
+	- [Triplanar gradient terrain](#triplanar-gradient-terrain)
+	- [Water](#water)
 - [Procedural terrain *(Work in progress)*](#procedural-terrain-work-in-progress)
 - [Runtime Brush *(Work in progress)*](#runtime-brush-work-in-progress)
 
@@ -215,14 +219,26 @@ You can find a lot more for free on [ScreamingBrainStudios](https://screamingbra
 
 
 ## TerrainHeightmapConfiguration
-A configuration where you can provide an Heightmap image to shape the terrain. You can generate heightmap images using [This free generator for Unreal engine](https://manticorp.github.io/unrealheightmap/index.html#latitude/27.48025310172045/longitude/85.42179107666016/zoom/15/outputzoom/13/width/505/height/505) but the output can be use inside Godot as well
+A configuration where you can provide an Heightmap image to shape the terrain. You can generate heightmap images using [This free generator for Unreal engine](https://manticorp.github.io/unrealheightmap/index.html#latitude/27.48025310172045/longitude/85.42179107666016/zoom/15/outputzoom/13/width/505/height/505) but the output can be use inside Godot as well.
 
 ### Heightmap image
-A valid heightmap image on black white pattern that represents a shaped terrain.
+A valid heightmap image on black white pattern that represents a shaped terrain. 
 
 ### Auto scale
 Auto scale the correct height from the heightmap for a more accurate result.
 
+### Example
+Below you have a generated heightmap with the tool linked before
+
+<img src="images/27_246_84_838_15_1009_1009.png" alt="heightmap_example" width="500" height="500">
+
+- - -
+
+
+![terrain_heightmap_](images/terrain_heightmap.png)
+
+
+- - -
 
 # Generation examples
 
@@ -315,7 +331,45 @@ The following terrain images were captured generating a terrain using `TerrainNo
 ![square_flow_fall_off](images/terrain_square_flow_fall_off.png)
 
 
-# Terrain shader
+# Terrain shaders
+This addon provides multiple shaders to achieve terrain texturing based on **world height** and **triplanar mapping**, designed to avoid visible UV seams and texture stretching. 
+
+They are located in `res://addons/terrainy/shaders/terrain`
+
+To use them just create a new `ShaderMaterial`, assign the desired shader and set this material into the `MeshInstance3D` where the terrain mesh was generated.
+
+## Triplanar terrain
+The shader `triplanar_terrain.gdshader` projects textures in **three axes (X/Y/Z)** and blends them based on surface normals. It eliminates visible seams and UV stretching.
+
+There are few terrain textures to test located on `res://addons/terrainy/shaders/terrain`
+
+
+![triplanar_terrain](images/triplanar_terrain.png)
+
+- - -
+
+## Triplanar gradient terrain
+This shader `triplanar_gradient_terrain.gdshader`  variant replaces texture-based blending with **smooth gradient transitions** that uses `GradientTexture2D`, useful for stylized terrain or color-based materials for low-poly environments. This shader ensures visually clean gradients even on high resolution meshes.
+
+There are few premade gradients that can be found on `res://addons/terrainy/shaders/terrain/gradients`
+
+
+![triplanar_gradient_terrain](images/terrain_gradient.png)
+
+
+
+## Water
+A modified version of the original water shader from [LesusX](https://github.com/LesusX/YouTube/blob/main/WaterShader/water.gdshader). The material can be found in `res://addons/terrainy/shaders/terrain/water/ocean_water.tres` and is ready to go.
+
+
+To use this material just assign it into a new `MeshInstance3D` with a `PlaneMesh` or `QuadMesh`. 
+
+
+![water_parameters](images/water_parameters.png)
+
+- - -
+
+![water](images/water.png)
 
 
 

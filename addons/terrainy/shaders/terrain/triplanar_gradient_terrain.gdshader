@@ -1,5 +1,5 @@
 shader_type spatial;
-render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_burley, specular_schlick_ggx;
+render_mode depth_draw_opaque, cull_back, diffuse_burley, specular_schlick_ggx;
 
 group_uniforms General;
 uniform float blend_factor : hint_range(0.1, 50.0) = 5.0;
@@ -7,6 +7,7 @@ uniform float fade_range = 5.0;
 uniform float height_dirt = 5.0;
 uniform float height_grass = 15.0;
 uniform float height_mountain = 30.0;
+
 uniform float roughness : hint_range(0.0, 1.0) = 1.0;
 uniform float metallic : hint_range(0.0, 1.0) = 0.0;
 
@@ -30,6 +31,16 @@ uniform float mountain_uv_scale = 1.0;
 varying vec3 world_pos;
 varying vec3 triplanar_normal_abs;
 
+vec3 gradient_sample(sampler2D tex, float height, float sharpness) {
+	// Normaliza altura a UV
+	float t = clamp(height, 0.0, 1.0);
+
+	// Suavizado basado en derivadas de pantalla
+	float aa = fwidth(t) * sharpness;
+
+	// Sample con suavizado
+	return texture(tex, vec2(t, 0.5)).rgb;
+}
 
 float fast_hash(vec2 p) {
 	return fract(sin(dot(p, vec2(12.9898,78.233))) * 43758.5453);
@@ -43,7 +54,16 @@ vec2 simple_stochastic(vec2 uv, float strength) {
 
 vec3 triplanar_rgb_lite(sampler2D tex, vec3 pos, vec3 normal_abs, float blend_sharpness) {
 	float t = clamp(pos.y * 0.05 + 0.5, 0.0, 1.0);
-	return textureLod(tex, vec2(t, 0.5), 1.5).rgb;
+	float fw = max(fwidth(t) * 1.5, 1e-6);
+   
+	float t_lo = t - fw * 0.5;
+	float t_hi = t + fw * 0.5;
+	float smoothed_t = smoothstep(t_lo, t_hi, t);
+	smoothed_t += (fwidth(smoothed_t) * 0.25);
+
+	vec3 col = texture(tex, vec2(smoothed_t, 0.5)).rgb;
+	
+	return col;
 }
 
 
