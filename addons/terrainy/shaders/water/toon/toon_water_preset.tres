@@ -1,0 +1,32 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://dvlepsqjnk7y"]
+
+[ext_resource type="Shader" uid="uid://blinfebpa0q2s" path="res://addons/terrainy/shaders/water/toon/toon_water.gdshader" id="1_4tchi"]
+[ext_resource type="Texture2D" uid="uid://b1ectsiw6b0vh" path="res://addons/terrainy/shaders/water/toon/WaterDistortion.png" id="2_102mr"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_38bfh"]
+noise_type = 3
+frequency = 0.0367
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_8vof8"]
+noise = SubResource("FastNoiseLite_38bfh")
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_4tchi")
+shader_parameter/surfaceNoise = SubResource("NoiseTexture2D_8vof8")
+shader_parameter/distortNoise = ExtResource("2_102mr")
+shader_parameter/beer_factor = 1.3
+shader_parameter/foam_color = Color(1, 1, 1, 1)
+shader_parameter/foam_max_distance = 0.4
+shader_parameter/foam_min_distance = 0.04
+shader_parameter/surface_noise_tiling = Vector2(1, 4)
+shader_parameter/surface_noise_scroll = Vector3(0.03, 0.03, 0)
+shader_parameter/surface_noise_cutoff = 0.777
+shader_parameter/surface_distortion_amount = 0.27
+shader_parameter/_DepthGradientShallow = Color(0.325, 0.807, 0.971, 0.725)
+shader_parameter/_DepthGradientDeep = Color(0.086, 0.407, 1, 0.749)
+shader_parameter/_DepthMaxDistance = 1.0
+shader_parameter/_DepthFactor = 1.0
+shader_parameter/depth_layers = 4
+shader_parameter/caustics_amount = 0.5
+shader_parameter/caustics_scale = 0.5
